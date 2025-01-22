@@ -1,10 +1,11 @@
 package chess;
 
-import chess.PieceMovesCalculator.RookMovesCalculator;
+import chess.PieceMoves.BishopMovesCalculator;
+import chess.PieceMoves.RookMovesCalculator;
 
 import java.util.Collection;
-import java.util.Objects;
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * Represents a single chess piece
@@ -14,8 +15,9 @@ import java.util.ArrayList;
  */
 public class ChessPiece {
 
-    private final ChessGame.TeamColor pieceColor;
-    private final ChessPiece.PieceType type;
+    private ChessGame.TeamColor pieceColor;
+    private ChessPiece.PieceType type;
+    private ArrayList<ChessMove> moves = new ArrayList<>();
 
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.pieceColor = pieceColor;
@@ -23,10 +25,25 @@ public class ChessPiece {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ChessPiece that = (ChessPiece) o;
+        return pieceColor == that.pieceColor && type == that.type && Objects.equals(moves, that.moves);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pieceColor, type, moves);
+    }
+
+    @Override
     public String toString() {
         return "ChessPiece{" +
                 "pieceColor=" + pieceColor +
                 ", type=" + type +
+                ", moves=" + moves +
                 '}';
     }
 
@@ -64,10 +81,16 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        Collection<ChessMove> moves = new ArrayList<>();
-        if (this.getPieceType() == PieceType.ROOK){
-            RookMovesCalculator rookcalculator = new RookMovesCalculator();
-            moves = rookcalculator.calculateRookMoves(board, myPosition, this.getTeamColor());
+        switch (type) {
+            case ROOK:
+                RookMovesCalculator rookMoves = new RookMovesCalculator(board, pieceColor, myPosition, moves);
+                rookMoves.pieceMoves();
+                break;
+            case BISHOP:
+                BishopMovesCalculator bishopMoves = new BishopMovesCalculator(board, pieceColor, myPosition, moves);
+                bishopMoves.pieceMoves();
+                break;
+
         }
         return moves;
     }
