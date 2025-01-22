@@ -1,6 +1,8 @@
 package chess;
 
 import chess.PieceMoves.BishopMovesCalculator;
+import chess.PieceMoves.KnightMovesCalculator;
+import chess.PieceMoves.QueenMovesCalculator;
 import chess.PieceMoves.RookMovesCalculator;
 
 import java.util.Collection;
@@ -89,6 +91,14 @@ public class ChessPiece {
             case BISHOP:
                 BishopMovesCalculator bishopMoves = new BishopMovesCalculator(board, pieceColor, myPosition, moves);
                 bishopMoves.pieceMoves();
+                break;
+            case KNIGHT:
+                KnightMovesCalculator knightMoves = new KnightMovesCalculator(board, pieceColor, myPosition, moves);
+                knightMoves.pieceMoves();
+                break;
+            case QUEEN:
+                QueenMovesCalculator queenMoves = new QueenMovesCalculator(board, pieceColor, myPosition, moves);
+                queenMoves.pieceMoves();
                 break;
 
         }
