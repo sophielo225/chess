@@ -1,9 +1,6 @@
 package chess;
 
-import chess.PieceMoves.BishopMovesCalculator;
-import chess.PieceMoves.KnightMovesCalculator;
-import chess.PieceMoves.QueenMovesCalculator;
-import chess.PieceMoves.RookMovesCalculator;
+import chess.PieceMoves.*;
 
 import java.util.Collection;
 import java.util.ArrayList;
@@ -17,9 +14,9 @@ import java.util.Objects;
  */
 public class ChessPiece {
 
-    private ChessGame.TeamColor pieceColor;
-    private ChessPiece.PieceType type;
-    private ArrayList<ChessMove> moves = new ArrayList<>();
+    private final ChessGame.TeamColor pieceColor;
+    private final ChessPiece.PieceType type;
+    private final ArrayList<ChessMove> moves = new ArrayList<>();
 
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.pieceColor = pieceColor;
@@ -99,6 +96,10 @@ public class ChessPiece {
             case QUEEN:
                 QueenMovesCalculator queenMoves = new QueenMovesCalculator(board, pieceColor, myPosition, moves);
                 queenMoves.pieceMoves();
+                break;
+            case KING:
+                KingMovesCalculator kingMoves = new KingMovesCalculator(board, pieceColor, myPosition, moves);
+                kingMoves.pieceMoves();
                 break;
 
         }
