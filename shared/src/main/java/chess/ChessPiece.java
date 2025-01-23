@@ -101,7 +101,10 @@ public class ChessPiece {
                 KingMovesCalculator kingMoves = new KingMovesCalculator(board, pieceColor, myPosition, moves);
                 kingMoves.pieceMoves();
                 break;
-
+            case PAWN:
+                PawnMovesCalculator pawnMoves = new PawnMovesCalculator(board, pieceColor, myPosition, moves);
+                pawnMoves.pieceMoves();
+                break;
         }
         return moves;
     }
