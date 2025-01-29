@@ -1,4 +1,4 @@
-package chess.PieceMoves;
+package chess.piecemoves;
 
 import chess.*;
 import java.util.ArrayList;
@@ -42,7 +42,8 @@ public class PieceMovesCalculator {
             return false;
         }
         PieceMovesCalculator that = (PieceMovesCalculator) o;
-        return Objects.equals(board, that.board) && color == that.color && Objects.equals(myPosition, that.myPosition) && Objects.equals(moves, that.moves);
+        return Objects.equals(board, that.board) && color == that.color
+                && Objects.equals(myPosition, that.myPosition) && Objects.equals(moves, that.moves);
     }
 
     @Override
