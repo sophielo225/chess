@@ -80,6 +80,9 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
+        if (!moves.isEmpty()){
+            moves.clear();
+        }
         switch (type) {
             case ROOK:
                 RookMovesCalculator rookMoves = new RookMovesCalculator(board, pieceColor, myPosition, moves);
