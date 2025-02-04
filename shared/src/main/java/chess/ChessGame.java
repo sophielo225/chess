@@ -96,6 +96,40 @@ public class ChessGame {
     }
 
     /**
+     * Get the map which specified enemy pieces are put in position/piece pairs
+     *
+     * @param teamColor which team to get the threatening pieces
+     * @return Map of pieces which attack the king of the specified team
+     */
+    private Map<ChessPosition, ChessPiece> getInCheckPieceMap(TeamColor teamColor) {
+        Map<ChessPosition, ChessPiece> map = new HashMap<>();
+        Map<ChessPosition, ChessPiece> myMap, enemyMap;
+        if (teamColor == TeamColor.WHITE) {
+            myMap = getPieceMapByColor(TeamColor.WHITE);
+            enemyMap = getPieceMapByColor(TeamColor.BLACK);
+        } else {
+            myMap = getPieceMapByColor(TeamColor.BLACK);
+            enemyMap = getPieceMapByColor(TeamColor.WHITE);
+        }
+        ChessPosition kingPosition = new ChessPosition(0, 0);
+        for (Map.Entry<ChessPosition, ChessPiece> item : myMap.entrySet()) {
+            if (item.getValue().getPieceType() == ChessPiece.PieceType.KING) {
+                kingPosition = item.getKey();
+                break;
+            }
+        }
+        for (Map.Entry<ChessPosition, ChessPiece> item : enemyMap.entrySet()) {
+            ChessPosition position = item.getKey();
+            for (ChessMove move : item.getValue().pieceMoves(board, position)) {
+                if (move.getEndPosition().equals(kingPosition)) {
+                    map.put(position, item.getValue());
+                }
+            }
+        }
+        return map;
+    }
+
+    /**
      * Get the map which specified team pieces are put in position/piece pairs
      *
      * @param teamColor which team to get the piece map
