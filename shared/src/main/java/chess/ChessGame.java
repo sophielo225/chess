@@ -1,6 +1,8 @@
 package chess;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -91,6 +93,28 @@ public class ChessGame {
      */
     public boolean isInStalemate(TeamColor teamColor) {
         throw new RuntimeException("Not implemented");
+    }
+
+    /**
+     * Get the map which specified team pieces are put in position/piece pairs
+     *
+     * @param teamColor which team to get the piece map
+     * @return Piece map of the specified team
+     */
+    private Map<ChessPosition, ChessPiece> getPieceMapByColor(TeamColor teamColor) {
+        Map<ChessPosition, ChessPiece> map = new HashMap<>();
+        for (int row = 1; row < 9; row++) {
+            for (int col = 1; col < 9; col++) {
+                ChessPosition position = new ChessPosition(row, col);
+                ChessPiece piece = board.getPiece(position);
+                if (piece != null) {
+                    if (piece.getTeamColor() == teamColor) {
+                        map.put(position, piece);
+                    }
+                }
+            }
+        }
+        return map;
     }
 
     /**
