@@ -1,9 +1,6 @@
 package chess;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -34,6 +31,20 @@ public class ChessGame {
      */
     public void setTeamTurn(TeamColor team) {
         teamTurn = team;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ChessGame chessGame = (ChessGame) o;
+        return teamTurn == chessGame.teamTurn && Objects.equals(board, chessGame.board);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(teamTurn, board);
     }
 
     /**
@@ -79,7 +90,42 @@ public class ChessGame {
      * @throws InvalidMoveException if move is invalid
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        throw new RuntimeException("Not implemented");
+        ChessPiece piece = board.getPiece(move.getStartPosition());
+        if (piece == null) {
+            throw new InvalidMoveException("There is no piece to move");
+        }
+        if (piece.getTeamColor() != getTeamTurn()) {
+            throw new InvalidMoveException("Wrong turn");
+        }
+        ChessPosition myPosition = move.getStartPosition();
+        ChessPosition newPosition = move.getEndPosition();
+        ArrayList<ChessPosition> newPositions = new ArrayList<>();
+        for (ChessMove newMove : piece.pieceMoves(board, myPosition)) {
+            newPositions.add(newMove.getEndPosition());
+        }
+        if (!newPositions.contains(move.getEndPosition())) {
+            throw new InvalidMoveException("Move is not allowed");
+        }
+        ChessPiece tempPiece = board.getPiece(newPosition);
+        ChessPiece.PieceType newType;
+        if (move.getPromotionPiece() != null) {
+            newType = move.getPromotionPiece();
+        } else {
+            newType = piece.getPieceType();
+        }
+        ChessPiece newPiece = new ChessPiece(piece.getTeamColor(), newType);
+        board.addPiece(myPosition, null);
+        board.addPiece(newPosition, newPiece);
+        if (isInCheck(piece.getTeamColor())) {
+            board.addPiece(newPosition, tempPiece);
+            board.addPiece(myPosition, piece);
+            throw new InvalidMoveException("Move is not allowed");
+        }
+        if (piece.getTeamColor() == TeamColor.WHITE) {
+            setTeamTurn(TeamColor.BLACK);
+        } else {
+            setTeamTurn(TeamColor.WHITE);
+        }
     }
 
     /**
