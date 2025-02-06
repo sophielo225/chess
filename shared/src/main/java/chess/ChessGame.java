@@ -156,7 +156,39 @@ public class ChessGame {
      * @return True if the specified team is in stalemate, otherwise false
      */
     public boolean isInStalemate(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+        Set<ChessPosition> enemyEndPositions = new HashSet<>();
+        ArrayList<ChessPosition> kingEndPositions = new ArrayList<>();
+        if (!isInCheck(teamColor)) {
+            Map<ChessPosition, ChessPiece> myMap, enemyMap;
+            if (teamColor == TeamColor.WHITE) {
+                myMap = getPieceMapByColor(TeamColor.WHITE);
+                enemyMap = getPieceMapByColor(TeamColor.BLACK);
+            } else {
+                myMap = getPieceMapByColor(TeamColor.BLACK);
+                enemyMap = getPieceMapByColor(TeamColor.WHITE);
+            }
+            for (Map.Entry<ChessPosition, ChessPiece> item : myMap.entrySet()) {
+                ChessPiece piece = item.getValue();
+                if (piece.getPieceType() == ChessPiece.PieceType.KING) {
+                    for (ChessMove move : piece.pieceMoves(board, item.getKey())) {
+                        kingEndPositions.add(move.getEndPosition());
+                    }
+                }
+            }
+            for (Map.Entry<ChessPosition, ChessPiece> item : enemyMap.entrySet()) {
+                ChessPiece piece = item.getValue();
+                for (ChessMove move : piece.pieceMoves(board, item.getKey())) {
+                    enemyEndPositions.add(move.getEndPosition());
+                }
+
+            }
+            if (kingEndPositions.isEmpty()) {
+                return false;
+            } else {
+                return enemyEndPositions.containsAll(kingEndPositions);
+            }
+        }
+        return false;
     }
 
     /**
