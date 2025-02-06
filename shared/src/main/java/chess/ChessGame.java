@@ -47,6 +47,14 @@ public class ChessGame {
         return Objects.hash(teamTurn, board);
     }
 
+    @Override
+    public String toString() {
+        return "ChessGame{" +
+                "teamTurn=" + teamTurn +
+                ", board=" + board +
+                '}';
+    }
+
     /**
      * Enum identifying the 2 possible teams in a chess game
      */
@@ -139,13 +147,48 @@ public class ChessGame {
     }
 
     /**
+     * Determines if the given piece can be captured
+     *
+     * @param teamColor which team to check for check
+     * @param enemyPosition position of the enemy piece
+     * @return True if the specified enemy can be captured
+     */
+    private boolean enemyCanBeCaptured(TeamColor teamColor, ChessPosition enemyPosition) {
+        Map<ChessPosition, ChessPiece> map = getPieceMapByColor(teamColor);
+        for (Map.Entry<ChessPosition, ChessPiece> teamItem : map.entrySet()) {
+            ChessPiece piece = teamItem.getValue();
+            if (piece.getPieceType() == ChessPiece.PieceType.KING) {
+                continue;
+            }
+            for (ChessMove move : piece.pieceMoves(board, teamItem.getKey())) {
+                if (move.getEndPosition().equals(enemyPosition)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Determines if the given team is in checkmate
      *
      * @param teamColor which team to check for checkmate
      * @return True if the specified team is in checkmate
      */
     public boolean isInCheckmate(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+        Map<ChessPosition, ChessPiece> map = getInCheckPieceMap(teamColor);
+        if (!map.isEmpty()) {
+            Iterator<Map.Entry<ChessPosition, ChessPiece>> it = map.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<ChessPosition, ChessPiece> enemyPiece = it.next();
+                if (enemyCanBeCaptured(teamColor, enemyPiece.getKey())) {
+                    it.remove();
+                    break;
+                }
+            }
+            return !map.isEmpty();
+        }
+        return false;
     }
 
     /**
