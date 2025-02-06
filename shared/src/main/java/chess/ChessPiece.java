@@ -29,7 +29,7 @@ public class ChessPiece {
             return false;
         }
         ChessPiece that = (ChessPiece) o;
-        return pieceColor == that.pieceColor && type == that.type && Objects.equals(moves, that.moves);
+        return pieceColor == that.pieceColor && type == that.type;
     }
 
     @Override
@@ -84,9 +84,13 @@ public class ChessPiece {
             moves.clear();
         }
         switch (type) {
-            case ROOK:
-                RookMovesCalculator rookMoves = new RookMovesCalculator(board, pieceColor, myPosition, moves);
-                rookMoves.pieceMoves();
+            case KING:
+                KingMovesCalculator kingMoves = new KingMovesCalculator(board, pieceColor, myPosition, moves);
+                kingMoves.pieceMoves();
+                break;
+            case QUEEN:
+                QueenMovesCalculator queenMoves = new QueenMovesCalculator(board, pieceColor, myPosition, moves);
+                queenMoves.pieceMoves();
                 break;
             case BISHOP:
                 BishopMovesCalculator bishopMoves = new BishopMovesCalculator(board, pieceColor, myPosition, moves);
@@ -96,13 +100,9 @@ public class ChessPiece {
                 KnightMovesCalculator knightMoves = new KnightMovesCalculator(board, pieceColor, myPosition, moves);
                 knightMoves.pieceMoves();
                 break;
-            case QUEEN:
-                QueenMovesCalculator queenMoves = new QueenMovesCalculator(board, pieceColor, myPosition, moves);
-                queenMoves.pieceMoves();
-                break;
-            case KING:
-                KingMovesCalculator kingMoves = new KingMovesCalculator(board, pieceColor, myPosition, moves);
-                kingMoves.pieceMoves();
+            case ROOK:
+                RookMovesCalculator rookMoves = new RookMovesCalculator(board, pieceColor, myPosition, moves);
+                rookMoves.pieceMoves();
                 break;
             case PAWN:
                 PawnMovesCalculator pawnMoves = new PawnMovesCalculator(board, pieceColor, myPosition, moves);

@@ -13,8 +13,8 @@ public class ChessGame {
     private ChessBoard board;
 
     public ChessGame() {
-    board = new ChessBoard();
-    board.resetBoard();
+        board = new ChessBoard();
+        board.resetBoard();
     }
 
     /**
@@ -31,28 +31,6 @@ public class ChessGame {
      */
     public void setTeamTurn(TeamColor team) {
         teamTurn = team;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        ChessGame chessGame = (ChessGame) o;
-        return teamTurn == chessGame.teamTurn && Objects.equals(board, chessGame.board);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(teamTurn, board);
-    }
-
-    @Override
-    public String toString() {
-        return "ChessGame{" +
-                "teamTurn=" + teamTurn +
-                ", board=" + board +
-                '}';
     }
 
     /**
