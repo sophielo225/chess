@@ -11,6 +11,7 @@ import java.util.*;
 public class ChessGame {
     private TeamColor teamTurn = TeamColor.WHITE;
     private ChessBoard board;
+    private ChessPosition pieceEnPassant = null;
 
     public ChessGame() {
         board = new ChessBoard();
@@ -41,6 +42,48 @@ public class ChessGame {
         BLACK
     }
 
+    private boolean canMakeEnPassantMove (ChessPosition startPosition) {
+        ChessPiece piece = board.getPiece(startPosition);
+        if (piece.getPieceType() == ChessPiece.PieceType.PAWN) {
+            return startPosition.getRow() == pieceEnPassant.getRow() &&
+                    (Math.abs(startPosition.getColumn() - pieceEnPassant.getColumn()) == 1);
+        }
+        return false;
+    }
+
+    private ChessPosition getEnPassantPosition (ChessPiece piece) {
+        if (piece == null) {
+            return null;
+        }
+        if (piece.getTeamColor() == TeamColor.WHITE) {
+            return new ChessPosition(pieceEnPassant.getRow() + 1, pieceEnPassant.getColumn());
+        } else {
+            return new ChessPosition(pieceEnPassant.getRow() - 1, pieceEnPassant.getColumn());
+        }
+    }
+
+    private boolean isEnPassant (ChessPiece pawn, ChessPosition newPosition) {
+        if (pawn == null) {
+            return false;
+        }
+        Map<ChessPosition, ChessPiece> enemyMap;
+        if (pawn.getTeamColor() == TeamColor.WHITE) {
+            enemyMap = getPieceMapByColor(TeamColor.BLACK);
+        } else {
+            enemyMap = getPieceMapByColor(TeamColor.WHITE);
+        }
+        for (Map.Entry<ChessPosition, ChessPiece> item : enemyMap.entrySet()) {
+            ChessPiece piece = item.getValue();
+            ChessPosition piecePosition = item.getKey();
+            if ((piece.getPieceType() == ChessPiece.PieceType.PAWN) &&
+                    (Math.abs(piecePosition.getColumn() - newPosition.getColumn()) == 1) &&
+                    (piecePosition.getRow() == newPosition.getRow())) {
+                    return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Gets a valid moves for a piece at the given location
      *
@@ -66,6 +109,13 @@ public class ChessGame {
             board.addPiece(newPosition, tempPiece);
             board.addPiece(piecePosition, piece);
         }
+        if (pieceEnPassant != null) {
+            if (canMakeEnPassantMove(startPosition)) {
+                ChessPosition newPosition = getEnPassantPosition(piece);
+                ChessMove newMove = new ChessMove(startPosition, newPosition, null);
+                moves.add(newMove);
+            }
+        }
         return moves;
     }
 
@@ -76,6 +126,9 @@ public class ChessGame {
      * @throws InvalidMoveException if move is invalid
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
+        if (move == null) {
+            return;
+        }
         ChessPiece piece = board.getPiece(move.getStartPosition());
         if (piece == null) {
             throw new InvalidMoveException("There is no piece to move");
@@ -88,6 +141,16 @@ public class ChessGame {
         ArrayList<ChessPosition> newPositions = new ArrayList<>();
         for (ChessMove newMove : piece.pieceMoves(board, myPosition)) {
             newPositions.add(newMove.getEndPosition());
+        }
+        if (pieceEnPassant != null) {
+            if (canMakeEnPassantMove(myPosition)) {
+                newPosition = getEnPassantPosition(piece);
+                board.addPiece(pieceEnPassant, null);
+                pieceEnPassant = null;
+                newPositions.add(newPosition);
+            } else {
+                pieceEnPassant = null;
+            }
         }
         if (!newPositions.contains(move.getEndPosition())) {
             throw new InvalidMoveException("Move is not allowed");
@@ -106,6 +169,12 @@ public class ChessGame {
             board.addPiece(newPosition, tempPiece);
             board.addPiece(myPosition, piece);
             throw new InvalidMoveException("Move is not allowed");
+        }
+        if (piece.getPieceType() == ChessPiece.PieceType.PAWN &&
+            Math.abs(myPosition.getRow() - newPosition.getRow()) == 2) {
+            if (isEnPassant(piece, newPosition)) {
+                pieceEnPassant = newPosition;
+            }
         }
         if (piece.getTeamColor() == TeamColor.WHITE) {
             setTeamTurn(TeamColor.BLACK);
