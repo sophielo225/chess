@@ -17,18 +17,8 @@ public class ChessGame {
     public ChessGame() {
         board = new ChessBoard();
         board.resetBoard();
-        ChessPiece whiteLeftRook = new ChessPiece(TeamColor.WHITE, ChessPiece.PieceType.ROOK);
-        castlingPieces.put(new ChessPosition(1, 1), whiteLeftRook);
-        ChessPiece whiteRightRook = new ChessPiece(TeamColor.WHITE, ChessPiece.PieceType.ROOK);
-        castlingPieces.put(new ChessPosition(1, 8), whiteRightRook);
-        ChessPiece whiteKing = new ChessPiece(TeamColor.WHITE, ChessPiece.PieceType.KING);
-        castlingPieces.put(new ChessPosition(1, 5), whiteKing);
-        ChessPiece blackLeftRook = new ChessPiece(TeamColor.BLACK, ChessPiece.PieceType.ROOK);
-        castlingPieces.put(new ChessPosition(8, 1), blackLeftRook);
-        ChessPiece blackRightRook = new ChessPiece(TeamColor.BLACK, ChessPiece.PieceType.ROOK);
-        castlingPieces.put(new ChessPosition(8, 8), blackRightRook);
-        ChessPiece blackKing = new ChessPiece(TeamColor.BLACK, ChessPiece.PieceType.KING);
-        castlingPieces.put(new ChessPosition(8, 5), blackKing);
+        addCastlingPieces(TeamColor.WHITE);
+        addCastlingPieces(TeamColor.BLACK);
     }
 
     /**
@@ -285,17 +275,13 @@ public class ChessGame {
         if (castlePiece != null && castlePiece.equals(piece)) {
             if (piece.getPieceType() == ChessPiece.PieceType.KING) {
                 castlingPieces.remove(myPosition, piece);
-                ChessPosition leftRookPosition = new ChessPosition(myPosition.getRow(), 1);
-                ChessPiece leftRook = board.getPiece(leftRookPosition);
-                if (castlingPieces.get(leftRookPosition) != null &&
-                        castlingPieces.get(leftRookPosition).equals(leftRook)) {
-                    castlingPieces.remove(leftRookPosition, leftRook);
-                }
-                ChessPosition rightRookPosition = new ChessPosition(myPosition.getRow(), 8);
-                ChessPiece rightRook = board.getPiece(rightRookPosition);
-                if (castlingPieces.get(rightRookPosition) != null &&
-                        castlingPieces.get(rightRookPosition).equals(rightRook)) {
-                    castlingPieces.remove(rightRookPosition, rightRook);
+                for (int col : Arrays.asList(1, 8)){
+                    ChessPosition rookPosition = new ChessPosition(myPosition.getRow(), col);
+                    ChessPiece rookPiece = board.getPiece(rookPosition);
+                    if (castlingPieces.get(rookPosition) != null &&
+                    castlingPieces.get(rookPosition).equals(rookPiece)) {
+                        castlingPieces.remove(rookPosition, rookPiece);
+                    }
                 }
             } else {
                 castlingPieces.remove(myPosition, piece);
@@ -304,17 +290,12 @@ public class ChessGame {
         if (piece.getPieceType() == ChessPiece.PieceType.KING) {
             int squares = newPosition.getColumn() - myPosition.getColumn();
             if (Math.abs(squares) == 2) {
-                if (squares < 0) {
-                    ChessPosition rookStartPosition = new ChessPosition(myPosition.getRow(), 1);
-                    ChessPosition rookEndPosition = new ChessPosition(myPosition.getRow(), 4);
-                    board.addPiece(rookStartPosition, null);
-                    board.addPiece(rookEndPosition, new ChessPiece(piece.getTeamColor(), ChessPiece.PieceType.ROOK));
-                } else {
-                    ChessPosition rookStartPosition = new ChessPosition(myPosition.getRow(), 8);
-                    ChessPosition rookEndPosition = new ChessPosition(myPosition.getRow(), 6);
-                    board.addPiece(rookStartPosition, null);
-                    board.addPiece(rookEndPosition, new ChessPiece(piece.getTeamColor(), ChessPiece.PieceType.ROOK));
-                }
+                final int rookStartColumn = (squares < 0) ? 1 : 8;
+                final ChessPosition rookStartPosition = new ChessPosition(myPosition.getRow(), rookStartColumn);
+                final int rookEndColumn = (squares < 0) ? 4 : 6;
+                final ChessPosition rookEndPosition = new ChessPosition(myPosition.getRow(), rookEndColumn);
+                board.addPiece(rookStartPosition, null);
+                board.addPiece(rookEndPosition, new ChessPiece(piece.getTeamColor(), ChessPiece.PieceType.ROOK));
             }
         }
         if (piece.getTeamColor() == TeamColor.WHITE) {
@@ -390,14 +371,9 @@ public class ChessGame {
         Set<ChessPosition> enemyEndPositions = new HashSet<>();
         ArrayList<ChessPosition> kingEndPositions = new ArrayList<>();
         if (!isInCheck(teamColor)) {
-            Map<ChessPosition, ChessPiece> myMap, enemyMap;
-            if (teamColor == TeamColor.WHITE) {
-                myMap = getPieceMapByColor(TeamColor.WHITE);
-                enemyMap = getPieceMapByColor(TeamColor.BLACK);
-            } else {
-                myMap = getPieceMapByColor(TeamColor.BLACK);
-                enemyMap = getPieceMapByColor(TeamColor.WHITE);
-            }
+            final Map<ChessPosition, ChessPiece> myMap = getPieceMapByColor(teamColor);
+            final Map<ChessPosition, ChessPiece> enemyMap = (teamColor == TeamColor.WHITE) ?
+                                            getPieceMapByColor(TeamColor.BLACK) : getPieceMapByColor(TeamColor.WHITE);
             for (Map.Entry<ChessPosition, ChessPiece> item : myMap.entrySet()) {
                 ChessPiece piece = item.getValue();
                 if (piece.getPieceType() == ChessPiece.PieceType.KING) {
@@ -430,14 +406,9 @@ public class ChessGame {
      */
     private Map<ChessPosition, ChessPiece> getInCheckPieceMap(TeamColor teamColor) {
         Map<ChessPosition, ChessPiece> map = new HashMap<>();
-        Map<ChessPosition, ChessPiece> myMap, enemyMap;
-        if (teamColor == TeamColor.WHITE) {
-            myMap = getPieceMapByColor(TeamColor.WHITE);
-            enemyMap = getPieceMapByColor(TeamColor.BLACK);
-        } else {
-            myMap = getPieceMapByColor(TeamColor.BLACK);
-            enemyMap = getPieceMapByColor(TeamColor.WHITE);
-        }
+        final Map<ChessPosition, ChessPiece> myMap = getPieceMapByColor(teamColor);
+        final Map<ChessPosition, ChessPiece> enemyMap = (teamColor == TeamColor.WHITE) ?
+                                            getPieceMapByColor(TeamColor.BLACK) : getPieceMapByColor(TeamColor.WHITE);
         ChessPosition kingPosition = new ChessPosition(0, 0);
         for (Map.Entry<ChessPosition, ChessPiece> item : myMap.entrySet()) {
             if (item.getValue().getPieceType() == ChessPiece.PieceType.KING) {
@@ -468,14 +439,24 @@ public class ChessGame {
             for (int col = 1; col < 9; col++) {
                 ChessPosition position = new ChessPosition(row, col);
                 ChessPiece piece = board.getPiece(position);
-                if (piece != null) {
-                    if (piece.getTeamColor() == teamColor) {
-                        map.put(position, piece);
-                    }
+                if (piece != null && piece.getTeamColor() == teamColor) {
+                    map.put(position, piece);
                 }
             }
         }
         return map;
+    }
+
+    private void addCastlingPieces(TeamColor team) {
+        final int row = (team == TeamColor.WHITE) ? 1 : 8;
+        for (int col : Arrays.asList(1, 5, 8)) {
+            ChessPosition piecePosition = new ChessPosition(row, col);
+            ChessPiece piece = board.getPiece(piecePosition);
+            ChessPiece.PieceType type = (col == 5) ? ChessPiece.PieceType.KING : ChessPiece.PieceType.ROOK;
+            if (piece != null && piece.getPieceType() == type) {
+                castlingPieces.put(piecePosition, piece);
+            }
+        }
     }
 
     /**
@@ -487,37 +468,9 @@ public class ChessGame {
         if (!castlingPieces.isEmpty()) {
             castlingPieces.clear();
         }
-        ChessPosition whiteLeftRookPosition = new ChessPosition(1, 1);
-        ChessPiece whiteLeftRook = board.getPiece(whiteLeftRookPosition);
-        if (whiteLeftRook != null && whiteLeftRook.getPieceType() == ChessPiece.PieceType.ROOK) {
-            castlingPieces.put(whiteLeftRookPosition, whiteLeftRook);
-        }
-        ChessPosition whiteRightRookPosition = new ChessPosition(1, 8);
-        ChessPiece whiteRightRook = board.getPiece(whiteRightRookPosition);
-        if (whiteRightRook != null && whiteRightRook.getPieceType() == ChessPiece.PieceType.ROOK) {
-            castlingPieces.put(whiteRightRookPosition, whiteRightRook);
-        }
-        ChessPosition whiteKingPosition = new ChessPosition(1, 5);
-        ChessPiece whiteKing = board.getPiece(whiteKingPosition);
-        if (whiteKing != null && whiteKing.getPieceType() == ChessPiece.PieceType.KING) {
-            castlingPieces.put(whiteKingPosition, whiteKing);
-        }
-        ChessPosition blackLeftRookPosition = new ChessPosition(8, 1);
-        ChessPiece blackLeftRook = board.getPiece(blackLeftRookPosition);
-        if (blackLeftRook != null && blackLeftRook.getPieceType() == ChessPiece.PieceType.ROOK) {
-            castlingPieces.put(blackLeftRookPosition, blackLeftRook);
-        }
-        ChessPosition blackRightRookPosition = new ChessPosition(8, 8);
-        ChessPiece blackRightRook = board.getPiece(blackRightRookPosition);
-        if (blackRightRook != null && blackRightRook.getPieceType() == ChessPiece.PieceType.ROOK) {
-            castlingPieces.put(blackRightRookPosition, blackRightRook);
-        }
-        ChessPosition blackKingPosition = new ChessPosition(8, 5);
-        ChessPiece blackKing = board.getPiece(blackKingPosition);
-        if (blackKing != null && blackKing.getPieceType() == ChessPiece.PieceType.KING) {
-            castlingPieces.put(blackKingPosition, blackKing);
-        }
         this.board = board;
+        addCastlingPieces(TeamColor.WHITE);
+        addCastlingPieces(TeamColor.BLACK);
     }
 
     /**
