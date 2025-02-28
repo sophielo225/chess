@@ -12,10 +12,10 @@ public class MemoryAuthDAO implements AuthDAO{
     }
 
     @Override
-    public AuthData createAuth(String token, String username) {
+    public AuthData createAuth(String token, String username) throws DataAccessException {
         AuthData newAuth = new AuthData(token, username);
         if (auths.contains(newAuth)) {
-            return null;
+            throw new DataAccessException("Authtoken already taken");
         } else {
             auths.add(newAuth);
         }
@@ -23,13 +23,13 @@ public class MemoryAuthDAO implements AuthDAO{
     }
 
     @Override
-    public AuthData getAuth(String username) {
+    public AuthData getAuth(String username) throws DataAccessException {
         for (AuthData auth : auths) {
             if (auth.username().equals(username)) {
                 return auth;
             }
         }
-        return null;
+        throw new DataAccessException("Invalid authtoken");
     }
 
     @Override

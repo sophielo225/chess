@@ -13,10 +13,10 @@ public class MemoryUserDAO implements UserDAO {
     }
 
     @Override
-    public UserData createUser(String username, String password, String email) {
+    public UserData createUser(String username, String password, String email) throws DataAccessException {
         UserData newUser = new UserData(username, password, email);
         if (users.contains(newUser)) {
-            throw new DataAccessException("already exist");
+            throw new DataAccessException("User already taken");
         }
         else {
             users.add(newUser);
@@ -25,12 +25,12 @@ public class MemoryUserDAO implements UserDAO {
     }
 
     @Override
-    public UserData getUser(String username, String password) {
+    public UserData getUser(String username, String password) throws DataAccessException {
         for (UserData user : users) {
-            if (user.username().equals(username)) {
+            if (user.username().equals(username) && user.password().equals(password)) {
                 return user;
             }
         }
-        return null;
+        throw new DataAccessException("Invalid username or password");
     }
 }

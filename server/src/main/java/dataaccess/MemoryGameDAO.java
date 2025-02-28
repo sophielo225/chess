@@ -16,10 +16,10 @@ public class MemoryGameDAO implements GameDAO{
 
     @Override
     public GameData createGame(int gameID, String whiteUsername, String blackUsername,
-                               String gameName, ChessGame game) {
+                               String gameName, ChessGame game) throws DataAccessException{
         GameData newGame = new GameData(gameID, whiteUsername, blackUsername, gameName, game);
         if (games.contains(newGame)) {
-            return null;
+            throw new DataAccessException("Game already taken");
         } else {
             games.add(newGame);
         }
@@ -27,13 +27,13 @@ public class MemoryGameDAO implements GameDAO{
     }
 
     @Override
-    public GameData getGame(int gameID) {
+    public GameData getGame(int gameID) throws DataAccessException {
         for (GameData game : games) {
             if (game.gameID() == gameID) {
                 return game;
             }
         }
-        return null;
+        throw new DataAccessException("Invalid gameID");
     }
 
     @Override
@@ -42,7 +42,7 @@ public class MemoryGameDAO implements GameDAO{
     }
 
     @Override
-    public GameData updateGame(int gameID, ChessGame game) {
+    public GameData updateGame(int gameID, ChessGame game) throws DataAccessException {
         getGame(gameID).game().setTeamTurn(game.getTeamTurn());
         getGame(gameID).game().setBoard(game.getBoard());
         getGame(gameID).game().setPieceEnPassant(game.getPieceEnPassant());
