@@ -16,7 +16,7 @@ public class MemoryUserDAO implements UserDAO {
     public UserData createUser(String username, String password, String email) {
         UserData newUser = new UserData(username, password, email);
         if (users.contains(newUser)) {
-            return null;
+            throw new DataAccessException("already exist");
         }
         else {
             users.add(newUser);
