@@ -6,5 +6,4 @@ public interface UserDAO {
     void clear();
     UserData createUser(String username, String password, String email);
     UserData getUser(String username, String password);
-    void deleteUser(String username);
 }

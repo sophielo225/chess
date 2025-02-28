@@ -45,6 +45,23 @@ public class ChessGame {
         BLACK
     }
 
+    public void setPieceEnPassant(ChessPosition position) {
+        pieceEnPassant = position;
+    }
+
+    public ChessPosition getPieceEnPassant() {
+        return pieceEnPassant;
+    }
+
+    public void setCastlingPieces(Map<ChessPosition, ChessPiece> newMap) {
+        castlingPieces.clear();
+        castlingPieces.putAll(newMap);
+    }
+
+    public Map<ChessPosition, ChessPiece> getCastlingPieces() {
+        return castlingPieces;
+    }
+
     private boolean canMakeEnPassantMove (ChessPosition startPosition) {
         ChessPiece piece = board.getPiece(startPosition);
         if (piece.getPieceType() == ChessPiece.PieceType.PAWN) {
@@ -429,7 +446,6 @@ public class ChessGame {
 
     /**
      * Get the map which specified team pieces are put in position/piece pairs
-     *
      * @param teamColor which team to get the piece map
      * @return Piece map of the specified team
      */
@@ -461,7 +477,6 @@ public class ChessGame {
 
     /**
      * Sets this game's chessboard with a given board
-     *
      * @param board the new board to use
      */
     public void setBoard(ChessBoard board) {
@@ -475,7 +490,6 @@ public class ChessGame {
 
     /**
      * Gets the current chessboard
-     *
      * @return the chessboard
      */
     public ChessBoard getBoard() {

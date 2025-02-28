@@ -11,5 +11,4 @@ public interface GameDAO {
     GameData getGame(int gameID);
     Collection<GameData> listGames();
     GameData updateGame(int gameID, ChessGame game);
-    void deleteGame(int gameID);
 }

@@ -33,9 +33,4 @@ public class MemoryUserDAO implements UserDAO {
         }
         return null;
     }
-
-    @Override
-    public void deleteUser(String username) {
-        users.removeIf(user -> user.username().equals(username));
-    }
 }

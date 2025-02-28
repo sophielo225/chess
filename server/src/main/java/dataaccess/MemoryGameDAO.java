@@ -43,11 +43,10 @@ public class MemoryGameDAO implements GameDAO{
 
     @Override
     public GameData updateGame(int gameID, ChessGame game) {
-        return null;
-    }
-
-    @Override
-    public void deleteGame(int gameID) {
-        games.removeIf(game -> game.gameID() == gameID);
+        getGame(gameID).game().setTeamTurn(game.getTeamTurn());
+        getGame(gameID).game().setBoard(game.getBoard());
+        getGame(gameID).game().setPieceEnPassant(game.getPieceEnPassant());
+        getGame(gameID).game().setCastlingPieces(game.getCastlingPieces());
+        return getGame(gameID);
     }
 }
