@@ -9,15 +9,16 @@ import java.util.HashSet;
 
 public class MemoryGameDAO implements GameDAO{
     private final HashSet<GameData> games = new HashSet<>();
+    private int gameID = 1000;
+
     @Override
     public void clear() {
         games.clear();
     }
 
     @Override
-    public GameData createGame(int gameID, String whiteUsername, String blackUsername,
-                               String gameName, ChessGame game) throws DataAccessException{
-        GameData newGame = new GameData(gameID, whiteUsername, blackUsername, gameName, game);
+    public GameData createGame(String gameName, String authToken) throws DataAccessException{
+        GameData newGame = new GameData(gameID++, null, null, gameName, new ChessGame());
         if (games.contains(newGame)) {
             throw new DataAccessException("Game already taken");
         } else {
@@ -49,4 +50,5 @@ public class MemoryGameDAO implements GameDAO{
         getGame(gameID).game().setCastlingPieces(game.getCastlingPieces());
         return getGame(gameID);
     }
+
 }
