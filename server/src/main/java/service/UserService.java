@@ -3,52 +3,59 @@ package service;
 import dataaccess.DataAccessException;
 import dataaccess.MemoryAuthDAO;
 import dataaccess.MemoryUserDAO;
-import exception.ResponseException;
-import model.AuthData;
 import model.UserData;
-import service.request.LoginRequest;
-import service.request.LogoutRequest;
-import service.request.RegisterRequest;
-import service.result.ErrorResult;
-import service.result.LoginResult;
-import service.result.RegisterResult;
 
 import java.util.UUID;
 
 public class UserService {
 
-    private final MemoryUserDAO memoryUserDAO;
+    public record RegisterRequest(String username, String password, String email) {}
+    public record RegisterResult(String username, String authToken, String message) {}
+    public record LoginRequest(String username, String password){}
+    public record LoginResult(String username, String authToken, String message) {}
+    public record LogoutRequest(String authToken) {}
+    public record LogoutResult(String message) {}
 
-    public UserService(MemoryUserDAO memoryUserDAO) {
+    private final MemoryUserDAO memoryUserDAO;
+    private final MemoryAuthDAO memoryAuthDAO;
+
+    public UserService(MemoryUserDAO memoryUserDAO, MemoryAuthDAO memoryAuthDAO) {
         this.memoryUserDAO = memoryUserDAO;
+        this.memoryAuthDAO = memoryAuthDAO;
     }
 
-    public RegisterResult register(RegisterRequest registerRequest) throws ResponseException, DataAccessException {
+    public static String generateToken() {
+        return UUID.randomUUID().toString();
+    }
+
+    public RegisterResult register(RegisterRequest registerRequest) throws DataAccessException {
         try {
             memoryUserDAO.getUser(registerRequest.username(), registerRequest.password());
-            throw new ResponseException(403, "Error: already taken");
+            return new RegisterResult(null, null, "Error: already taken");
         } catch (DataAccessException e) {
             UserData user = memoryUserDAO.createUser(registerRequest.username(), registerRequest.password(),
                     registerRequest.email());
-            
-            return new RegisterResult(user.username(), auth.authToken());
+            memoryAuthDAO.createAuth(generateToken(), user.username());
+            return new RegisterResult(user.username(), memoryAuthDAO.getAuth(user.username()).authToken(), "OK");
         }
     }
 
-    public LoginResult login(LoginRequest loginRequest) throws ResponseException {
+    public LoginResult login(LoginRequest loginRequest) {
         try {
             UserData user = memoryUserDAO.getUser(loginRequest.username(), loginRequest.password());
-            MemoryAuthDAO memoryAuthDAO = new MemoryAuthDAO();
-            AuthData auth = memoryAuthDAO.createAuth(UUID.randomUUID().toString(), user.username());
-            return new LoginResult(user.username(), auth.authToken());
+            memoryAuthDAO.createAuth(generateToken(), user.username());
+            return new LoginResult(user.username(), memoryAuthDAO.getAuth(user.username()).authToken(), "OK");
         } catch (DataAccessException e) {
-            throw new ResponseException(401, "Error: unauthorized");
+            return new LoginResult(null, null, "Error: unauthorized");
         }
     }
 
-    public void logout(LogoutRequest logoutRequest) throws ResponseException {
+    public LogoutResult logout(LogoutRequest logoutRequest) {
         try {
-            MemoryAuthDAO
+            memoryAuthDAO.deleteAuth(logoutRequest.authToken);
+            return new LogoutResult("OK");
+        } catch (DataAccessException e) {
+            return new LogoutResult("Error: unauthorized");
         }
     }
 }
