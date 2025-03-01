@@ -21,7 +21,7 @@ public class AuthService {
         return memoryAuthDAO.getAuth(username);
     }
 
-    public void deleteAuthToken(String username) {
+    public void deleteAuthToken(String username) throws DataAccessException {
         memoryAuthDAO.deleteAuth(username);
     }
 }

@@ -18,14 +18,12 @@ public class GameService {
     public record JoinGameRequest(String username, String authToken, ChessGame.TeamColor color, int gameID) {}
     public record JoinGameResult(String message) {}
 
-    private final MemoryUserDAO memoryUserDAO;
     private final MemoryAuthDAO memoryAuthDAO;
     private final MemoryGameDAO memoryGameDAO;
 
-    public GameService(MemoryGameDAO memoryGameDAO, MemoryAuthDAO memoryAuthDAO, MemoryUserDAO memoryUserDAO) {
+    public GameService(MemoryGameDAO memoryGameDAO, MemoryAuthDAO memoryAuthDAO) {
         this.memoryGameDAO = memoryGameDAO;
         this.memoryAuthDAO = memoryAuthDAO;
-        this.memoryUserDAO = memoryUserDAO;
     }
 
     public ListGamesResult listGames(ListGamesRequest listGamesRequest) throws DataAccessException {
@@ -47,10 +45,8 @@ public class GameService {
 
     public JoinGameResult joinGame(JoinGameRequest joinGameRequest) throws DataAccessException {
         if (memoryAuthDAO.getAuth(joinGameRequest.username).authToken().equals(joinGameRequest.authToken)) {
-            GameData gameData = memoryGameDAO.getGame(joinGameRequest.gameID());
-            if (joinGameRequest.color == ChessGame.TeamColor.WHITE) {
-                gameData.
-            }
+            memoryGameDAO.setPlayer(joinGameRequest.color, joinGameRequest.username, joinGameRequest.gameID());
+            return new JoinGameResult("OK");
         } else {
             return new JoinGameResult("Error: unauthorized");
         }
