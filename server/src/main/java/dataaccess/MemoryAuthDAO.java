@@ -52,4 +52,9 @@ public class MemoryAuthDAO implements AuthDAO{
         }
         return null;
     }
+
+    @Override
+    public int getAuthSize() {
+        return auths.size();
+    }
 }

@@ -33,4 +33,9 @@ public class MemoryUserDAO implements UserDAO {
         }
         throw new DataAccessException("Invalid username or password");
     }
+
+    @Override
+    public int getUserSize() {
+        return users.size();
+    }
 }

@@ -88,4 +88,9 @@ public class MemoryGameDAO implements GameDAO{
         getGame(gameID).game().setCastlingPieces(game.getCastlingPieces());*/
         return getGame(gameID);
     }
+
+    @Override
+    public int getGameSize() {
+        return games.size();
+    }
 }

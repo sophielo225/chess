@@ -9,4 +9,6 @@ public interface AuthDAO {
     void deleteAuth(String username) throws DataAccessException;
 
     String isAuthorized(String authToken);
+
+    int getAuthSize();
 }
