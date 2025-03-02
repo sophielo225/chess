@@ -10,5 +10,6 @@ public interface GameDAO {
     GameData createGame(String gameName, String authToken) throws DataAccessException;
     GameData getGame(int gameID) throws DataAccessException;
     Collection<GameData> listGames();
-    GameData updateGame(int gameID, ChessGame game) throws DataAccessException;
+    boolean joinGame(String color, String username, int gameID) throws DataAccessException;
+    GameData updateGame(ChessGame.TeamColor color, String username, int gameID) throws DataAccessException;
 }

@@ -1,7 +1,6 @@
 package dataaccess;
 
 import chess.ChessGame;
-import model.AuthData;
 import model.GameData;
 
 import java.util.ArrayList;
@@ -21,7 +20,7 @@ public class MemoryGameDAO implements GameDAO{
     public GameData createGame(String gameName, String authToken) throws DataAccessException{
         GameData newGame = new GameData(gameID++, null, null, gameName, new ChessGame());
         if (games.contains(newGame)) {
-            throw new DataAccessException("Game already taken");
+            throw new DataAccessException("Already taken");
         } else {
             games.add(newGame);
         }
@@ -44,6 +43,32 @@ public class MemoryGameDAO implements GameDAO{
     }
 
     @Override
+    public boolean joinGame(String color, String username, int gameID) throws DataAccessException {
+        GameData newGame, oldGame = getGame(gameID);
+        if (color.equals("WHITE")) {
+            if (oldGame.whiteUsername() == null)
+                newGame = oldGame.withWhiteUsername(username);
+            else
+                throw new DataAccessException("Already taken");
+        } else if (color.equals("BLACK")) {
+            if (oldGame.blackUsername() == null)
+                newGame = oldGame.withBlackUsername(username);
+            else
+                throw new DataAccessException("Already taken");
+        } else
+            throw new DataAccessException("Invalid color");
+        for (GameData game : games) {
+            if (game.gameID() == gameID) {
+                games.remove(game);
+                games.add(newGame);
+                return true;
+            }
+        }
+        // wrong gameID
+        return false;
+    }
+
+    @Override
     public GameData updateGame(ChessGame.TeamColor color, String username, int gameID) throws DataAccessException {
         GameData newGame;
         if (color == ChessGame.TeamColor.WHITE)
@@ -57,25 +82,10 @@ public class MemoryGameDAO implements GameDAO{
             }
         }
         games.add(newGame);
-        getGame(gameID).game().setTeamTurn(game.getTeamTurn());
+/*        getGame(gameID).game().setTeamTurn(game.getTeamTurn());
         getGame(gameID).game().setBoard(game.getBoard());
         getGame(gameID).game().setPieceEnPassant(game.getPieceEnPassant());
-        getGame(gameID).game().setCastlingPieces(game.getCastlingPieces());
+        getGame(gameID).game().setCastlingPieces(game.getCastlingPieces());*/
         return getGame(gameID);
-    }
-
-    public void setPlayer(ChessGame.TeamColor color, String username, int gameID) throws DataAccessException {
-        GameData newGame;
-        if (color == ChessGame.TeamColor.WHITE)
-            newGame = getGame(gameID).withWhiteUsername(username);
-        else
-            newGame = getGame(gameID).withBlackUsername(username);
-        for (GameData game : games) {
-            if (game.gameID() == gameID) {
-                games.remove(game);
-                break;
-            }
-        }
-        games.add(newGame);
     }
 }

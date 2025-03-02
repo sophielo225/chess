@@ -1,21 +1,20 @@
 package service;
 
-import chess.ChessGame;
 import dataaccess.DataAccessException;
 import dataaccess.MemoryAuthDAO;
 import dataaccess.MemoryGameDAO;
-import dataaccess.MemoryUserDAO;
+import exception.ResponseException;
 import model.GameData;
 
 import java.util.ArrayList;
 
 public class GameService {
 
-    public record ListGamesRequest(String username, String authToken) {}
+    public record ListGamesRequest(String authToken) {}
     public record ListGamesResult(ArrayList<GameData> games, String message) {}
-    public record CreateGameRequest(String username, String authToken, String gameName) {}
-    public record CreateGameResult(int gameID, String message) {}
-    public record JoinGameRequest(String username, String authToken, ChessGame.TeamColor color, int gameID) {}
+    public record CreateGameRequest(String gameName) {}
+    public record CreateGameResult(int gameID) {}
+    public record JoinGameRequest(String color, int gameID) {}
     public record JoinGameResult(String message) {}
 
     private final MemoryAuthDAO memoryAuthDAO;
@@ -26,29 +25,49 @@ public class GameService {
         this.memoryAuthDAO = memoryAuthDAO;
     }
 
-    public ListGamesResult listGames(ListGamesRequest listGamesRequest) throws DataAccessException {
-        if (memoryAuthDAO.getAuth(listGamesRequest.username).authToken().equals(listGamesRequest.authToken)) {
+    public void clear() {
+        memoryGameDAO.clear();
+    }
+
+    public ListGamesResult listGames(ListGamesRequest listGamesRequest) throws ResponseException {
+        if (memoryAuthDAO.isAuthorized(listGamesRequest.authToken()) != null) {
             return new ListGamesResult((ArrayList<GameData>) memoryGameDAO.listGames(), "OK");
         } else {
-            return new ListGamesResult(null, "Error: unauthorized");
+            throw new ResponseException(401, "Error: unauthorized");
         }
     }
 
-    public CreateGameResult createGame(CreateGameRequest createGameRequest) throws DataAccessException {
-        if (memoryAuthDAO.getAuth(createGameRequest.username).authToken().equals(createGameRequest.authToken)) {
-            GameData newGame = memoryGameDAO.createGame(createGameRequest.gameName, createGameRequest.authToken);
-            return new CreateGameResult(newGame.gameID(), "OK");
+    public CreateGameResult createGame(CreateGameRequest createGameRequest, String authToken) throws ResponseException {
+        if (memoryAuthDAO.isAuthorized(authToken) != null) {
+            try {
+                GameData newGame = memoryGameDAO.createGame(createGameRequest.gameName, authToken);
+                return new CreateGameResult(newGame.gameID());
+            } catch (DataAccessException e) {
+                throw new ResponseException(400, "Error: bad request");
+            }
         } else {
-            return new CreateGameResult(0, "Error: unauthorized");
+            throw new ResponseException(401, "Error: unauthorized");
         }
     }
 
-    public JoinGameResult joinGame(JoinGameRequest joinGameRequest) throws DataAccessException {
-        if (memoryAuthDAO.getAuth(joinGameRequest.username).authToken().equals(joinGameRequest.authToken)) {
-            memoryGameDAO.setPlayer(joinGameRequest.color, joinGameRequest.username, joinGameRequest.gameID());
-            return new JoinGameResult("OK");
+    public JoinGameResult joinGame(JoinGameRequest joinGameRequest, String authToken) throws ResponseException {
+        final String username = memoryAuthDAO.isAuthorized(authToken);
+        if (username != null) {
+            if (joinGameRequest.color == null)
+                throw new ResponseException(400, "Error: bad request");
+            try {
+                if (memoryGameDAO.joinGame(joinGameRequest.color, username, joinGameRequest.gameID()))
+                    return new JoinGameResult("OK");
+                else
+                    throw new ResponseException(400, "Error: bad request");
+            } catch (DataAccessException e) {
+                if (e.getMessage().equals("Already taken"))
+                    throw new ResponseException(403, "Error: already taken");
+                else
+                    throw new ResponseException(400, "Error: bad request");
+            }
         } else {
-            return new JoinGameResult("Error: unauthorized");
+            throw new ResponseException(401, "Error: unauthorized");
         }
     }
 }
