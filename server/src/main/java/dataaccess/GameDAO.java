@@ -11,7 +11,5 @@ public interface GameDAO {
     GameData getGame(int gameID) throws DataAccessException;
     Collection<GameData> listGames();
     boolean joinGame(String color, String username, int gameID) throws DataAccessException;
-    GameData updateGame(ChessGame.TeamColor color, String username, int gameID) throws DataAccessException;
-
     int getGameSize();
 }

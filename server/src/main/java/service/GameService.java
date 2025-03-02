@@ -53,18 +53,20 @@ public class GameService {
     public JoinGameResult joinGame(JoinGameRequest joinGameRequest, String authToken) throws ResponseException {
         final String username = memoryAuthDAO.isAuthorized(authToken);
         if (username != null) {
-            if (joinGameRequest.color == null)
+            if (joinGameRequest.color == null) {
                 throw new ResponseException(400, "Error: bad request");
-            try {
-                if (memoryGameDAO.joinGame(joinGameRequest.color, username, joinGameRequest.gameID()))
+            } try {
+                if (memoryGameDAO.joinGame(joinGameRequest.color, username, joinGameRequest.gameID())) {
                     return new JoinGameResult("OK");
-                else
+                } else {
                     throw new ResponseException(400, "Error: bad request");
+                }
             } catch (DataAccessException e) {
-                if (e.getMessage().equals("Already taken"))
+                if (e.getMessage().equals("Already taken")) {
                     throw new ResponseException(403, "Error: already taken");
-                else
+                } else {
                     throw new ResponseException(400, "Error: bad request");
+                }
             }
         } else {
             throw new ResponseException(401, "Error: unauthorized");

@@ -46,17 +46,20 @@ public class MemoryGameDAO implements GameDAO{
     public boolean joinGame(String color, String username, int gameID) throws DataAccessException {
         GameData newGame, oldGame = getGame(gameID);
         if (color.equals("WHITE")) {
-            if (oldGame.whiteUsername() == null)
+            if (oldGame.whiteUsername() == null) {
                 newGame = oldGame.withWhiteUsername(username);
-            else
+            } else {
                 throw new DataAccessException("Already taken");
+            }
         } else if (color.equals("BLACK")) {
-            if (oldGame.blackUsername() == null)
+            if (oldGame.blackUsername() == null) {
                 newGame = oldGame.withBlackUsername(username);
-            else
+            } else {
                 throw new DataAccessException("Already taken");
-        } else
+            }
+        } else {
             throw new DataAccessException("Invalid color");
+        }
         for (GameData game : games) {
             if (game.gameID() == gameID) {
                 games.remove(game);
@@ -66,27 +69,6 @@ public class MemoryGameDAO implements GameDAO{
         }
         // wrong gameID
         return false;
-    }
-
-    @Override
-    public GameData updateGame(ChessGame.TeamColor color, String username, int gameID) throws DataAccessException {
-        GameData newGame;
-        if (color == ChessGame.TeamColor.WHITE)
-            newGame = getGame(gameID).withWhiteUsername(username);
-        else
-            newGame = getGame(gameID).withBlackUsername(username);
-        for (GameData game : games) {
-            if (game.gameID() == gameID) {
-                games.remove(game);
-                break;
-            }
-        }
-        games.add(newGame);
-/*        getGame(gameID).game().setTeamTurn(game.getTeamTurn());
-        getGame(gameID).game().setBoard(game.getBoard());
-        getGame(gameID).game().setPieceEnPassant(game.getPieceEnPassant());
-        getGame(gameID).game().setCastlingPieces(game.getCastlingPieces());*/
-        return getGame(gameID);
     }
 
     @Override

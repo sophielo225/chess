@@ -45,23 +45,6 @@ public class ChessGame {
         BLACK
     }
 
-    public void setPieceEnPassant(ChessPosition position) {
-        pieceEnPassant = position;
-    }
-
-    public ChessPosition getPieceEnPassant() {
-        return pieceEnPassant;
-    }
-
-    public void setCastlingPieces(Map<ChessPosition, ChessPiece> newMap) {
-        castlingPieces.clear();
-        castlingPieces.putAll(newMap);
-    }
-
-    public Map<ChessPosition, ChessPiece> getCastlingPieces() {
-        return castlingPieces;
-    }
-
     private boolean canMakeEnPassantMove (ChessPosition startPosition) {
         ChessPiece piece = board.getPiece(startPosition);
         if (piece.getPieceType() == ChessPiece.PieceType.PAWN) {

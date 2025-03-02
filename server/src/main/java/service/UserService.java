@@ -36,9 +36,9 @@ public class UserService {
 
     public RegisterResult register(RegisterRequest registerRequest) throws ResponseException, DataAccessException {
         if ((registerRequest.username() == null) || (registerRequest.password() == null) ||
-                                                                                    (registerRequest.email() == null))
+                (registerRequest.email() == null)) {
             throw new ResponseException(400, "Error: bad request");
-        try {
+        } try {
             memoryUserDAO.getUser(registerRequest.username(), registerRequest.password());
             throw new ResponseException(403, "Error: already taken");
         } catch (DataAccessException e) {
@@ -54,8 +54,9 @@ public class UserService {
             UserData user = memoryUserDAO.getUser(loginRequest.username(), loginRequest.password());
             AuthData existingAuth = memoryAuthDAO.getAuth(user.username());
             AuthData authData = memoryAuthDAO.createAuth(generateToken(), user.username());
-            if (existingAuth.equals(authData))
+            if (existingAuth.equals(authData)) {
                 throw new ResponseException(401, "Error: unauthorized");
+            }
             return new LoginResult(user.username(), authData.authToken(), "OK");
         } catch (DataAccessException e) {
             throw new ResponseException(401, "Error: unauthorized");
@@ -63,8 +64,9 @@ public class UserService {
     }
 
     public LogoutResult logout(LogoutRequest logoutRequest) throws ResponseException, DataAccessException {
-        if (memoryAuthDAO.isAuthorized(logoutRequest.authToken()) == null)
+        if (memoryAuthDAO.isAuthorized(logoutRequest.authToken()) == null) {
             throw new ResponseException(401, "Error: unauthorized");
+        }
         memoryAuthDAO.deleteAuth(logoutRequest.authToken);
         return new LogoutResult("OK");
     }
