@@ -1,5 +1,7 @@
 package chess;
 
+import com.google.gson.Gson;
+
 import java.util.*;
 
 /**
@@ -11,7 +13,7 @@ import java.util.*;
 public class ChessGame {
     private TeamColor teamTurn = TeamColor.WHITE;
     private ChessBoard board;
-    private ChessPosition pieceEnPassant = null;
+    private ChessPosition pieceEnPassant = new ChessPosition(0, 0);
     private Map<ChessPosition, ChessPiece> castlingPieces = new HashMap<>();
 
     public ChessGame() {
@@ -196,7 +198,7 @@ public class ChessGame {
                 moves.addAll(castleMoves);
             }
         }
-        if (pieceEnPassant != null) {
+        if (!pieceEnPassant.equals(new ChessPosition(0, 0))) {
             if (canMakeEnPassantMove(startPosition)) {
                 ChessPosition newPosition = getEnPassantPosition(piece);
                 ChessMove newMove = new ChessMove(startPosition, newPosition, null);
@@ -229,14 +231,14 @@ public class ChessGame {
         for (ChessMove newMove : piece.pieceMoves(board, myPosition)) {
             newPositions.add(newMove.getEndPosition());
         }
-        if (pieceEnPassant != null) {
+        if (!pieceEnPassant.equals(new ChessPosition(0, 0))) {
             if (canMakeEnPassantMove(myPosition)) {
                 newPosition = getEnPassantPosition(piece);
                 board.addPiece(pieceEnPassant, null);
-                pieceEnPassant = null;
+                pieceEnPassant = new ChessPosition(0, 0);
                 newPositions.add(newPosition);
             } else {
-                pieceEnPassant = null;
+                pieceEnPassant = new ChessPosition(0, 0);
             }
         }
         if (piece.getPieceType() == ChessPiece.PieceType.KING) {
@@ -470,7 +472,8 @@ public class ChessGame {
         addCastlingPieces(TeamColor.WHITE);
         addCastlingPieces(TeamColor.BLACK);
     }
-
+    public String toString() { return new Gson().toJson(this);
+    }
     /**
      * Gets the current chessboard
      * @return the chessboard
