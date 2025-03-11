@@ -1,22 +1,15 @@
 package dataaccess;
 
 import chess.*;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.*;
 import exception.ResponseException;
 import model.GameData;
-import org.json.*;
 
-import java.io.IOException;
+import java.lang.reflect.Type;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 
 public class MySqlGameDAO implements SqlGameDAO, SqlDAO {
 
@@ -59,42 +52,6 @@ public class MySqlGameDAO implements SqlGameDAO, SqlDAO {
         return new GameData(id, "", "", gameName, chessGame);
     }
 
-    private GameData readGame(ResultSet rs) throws SQLException {
-        var gameID = rs.getInt("gameID");
-        var whiteUsername = rs.getString("whiteUsername");
-        if (whiteUsername.isEmpty())
-            whiteUsername = null;
-        var blackUsername = rs.getString("blackUsername");
-        if (blackUsername.isEmpty())
-            blackUsername = null;
-        var gameName = rs.getString("gameName");
-        var jsonGame = rs.getString("game");
-        JSONObject gameObj = new JSONObject(jsonGame);
-        String teamTurnStr = gameObj.getString("teamTurn");
-        ChessGame.TeamColor teamTurn = (teamTurnStr.equals("WHITE")) ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
-        JSONObject boardObj = gameObj.getJSONObject("board");
-        JSONArray boardArray = boardObj.getJSONArray("board");
-        ChessBoard board = new ChessBoard();
-        for (int row = 0; row < boardArray.length(); row++) {
-            JSONArray pieceRow = boardArray.getJSONArray(row);
-            for (int col = 0; col < pieceRow.length(); col++) {
-                if (pieceRow.isNull(col))
-                    continue;
-                JSONObject pieceObj = pieceRow.getJSONObject(col);
-                String colorStr = pieceObj.getString("pieceColor");
-                String typeStr = pieceObj.getString("type");
-                ChessGame.TeamColor color = (colorStr.equals("WHITE")) ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
-                ChessPiece.PieceType type = getPieceType(typeStr);
-                ChessPosition position = new ChessPosition(row + 1, col + 1);
-                board.addPiece(position, new ChessPiece(color, type));
-            }
-        }
-        ChessGame newGame = new ChessGame();
-        newGame.setBoard(board);
-        newGame.setTeamTurn(teamTurn);
-        return new GameData(gameID, whiteUsername, blackUsername, gameName, newGame);
-    }
-
     private static ChessPiece.PieceType getPieceType(String typeStr) {
         ChessPiece.PieceType type = null;
         switch (typeStr) {
@@ -106,6 +63,53 @@ public class MySqlGameDAO implements SqlGameDAO, SqlDAO {
             case "PAWN" -> type = ChessPiece.PieceType.PAWN;
         }
         return type;
+    }
+
+    private static class ChessGameTypeAdapter implements JsonDeserializer<ChessGame> {
+        @Override
+        public ChessGame deserialize(JsonElement element, Type type, JsonDeserializationContext context) throws JsonParseException {
+            String teamTurnStr = element.getAsJsonObject().get("teamTurn").getAsString();
+            ChessGame.TeamColor teamTurn = (teamTurnStr.equals("WHITE")) ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
+            JsonObject boardObj = element.getAsJsonObject().get("board").getAsJsonObject();
+            JsonArray boardArray = boardObj.get("board").getAsJsonArray();
+            ChessBoard board = new ChessBoard();
+            for (int row = 0; row < boardArray.size(); row++) {
+                JsonArray pieceRow = boardArray.get(row).getAsJsonArray();
+                for (int col = 0; col < pieceRow.size(); col++) {
+                    if (!pieceRow.get(col).isJsonObject()) {
+                        continue;
+                    }
+                    JsonObject pieceObj = pieceRow.get(col).getAsJsonObject();
+                    String colorStr = pieceObj.get("pieceColor").getAsString();
+                    String typeStr = pieceObj.get("type").getAsString();
+                    ChessGame.TeamColor color = (colorStr.equals("WHITE")) ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
+                    ChessPiece.PieceType pieceType = getPieceType(typeStr);
+                    ChessPosition position = new ChessPosition(row + 1, col + 1);
+                    board.addPiece(position, new ChessPiece(color, pieceType));
+                }
+            }
+            ChessGame newGame = new ChessGame();
+            newGame.setBoard(board);
+            newGame.setTeamTurn(teamTurn);
+            return newGame;
+        }
+    }
+
+    private GameData readGame(ResultSet rs) throws SQLException {
+        var gameID = rs.getInt("gameID");
+        var whiteUsername = rs.getString("whiteUsername");
+        if (whiteUsername.isEmpty())
+            whiteUsername = null;
+        var blackUsername = rs.getString("blackUsername");
+        if (blackUsername.isEmpty())
+            blackUsername = null;
+        var gameName = rs.getString("gameName");
+        var jsonGame = rs.getString("game");
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(ChessGame.class, new ChessGameTypeAdapter());
+        Gson gson = gsonBuilder.create();
+        var game = gson.fromJson(jsonGame, ChessGame.class);
+        return new GameData(gameID, whiteUsername, blackUsername, gameName, game);
     }
 
     @Override
