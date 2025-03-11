@@ -1,38 +1,190 @@
 package dataaccess;
 
+import chess.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import exception.ResponseException;
 import model.GameData;
+import org.json.*;
 
+import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.Iterator;
 
-public class MySqlGameDAO implements GameDAO{
-    @Override
-    public void clear() {
+public class MySqlGameDAO implements SqlGameDAO, SqlDAO {
 
+    public MySqlGameDAO() throws ResponseException {
+        configureDatabase(createGames);
     }
 
     @Override
-    public GameData createGame(String gameName, String authToken) throws DataAccessException {
+    public void clear() throws ResponseException {
+        var statement = "TRUNCATE games";
+        executeUpdate(statement);
+    }
+
+    private String isAlreadyTaken(String gameName) throws ResponseException {
+        try (var conn = DatabaseManager.getConnection()) {
+            var statement = "SELECT gameName FROM games WHERE gameName=?";
+            try (var ps = conn.prepareStatement(statement)) {
+                ps.setString(1, gameName);
+                try (var rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return readGame(rs).gameName();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new ResponseException(500, String.format("Unable to read data: %s", e.getMessage()));
+        }
         return null;
     }
 
     @Override
-    public GameData getGame(int gameID) throws DataAccessException {
+    public GameData createGame(String gameName, String authToken) throws ResponseException {
+        if (isAlreadyTaken(gameName) != null) {
+            return null;
+        }
+        var statement = "INSERT INTO games (whiteUsername, blackUsername, gameName, game) VALUES (?, ?, ?, ?)";
+        ChessGame chessGame = new ChessGame();
+        var jsonGame = new  Gson().toJson(chessGame);
+        var id = executeUpdate(statement, "", "", gameName, jsonGame);
+        return new GameData(id, "", "", gameName, chessGame);
+    }
+
+    private GameData readGame(ResultSet rs) throws SQLException {
+        var gameID = rs.getInt("gameID");
+        var whiteUsername = rs.getString("whiteUsername");
+        if (whiteUsername.isEmpty())
+            whiteUsername = null;
+        var blackUsername = rs.getString("blackUsername");
+        if (blackUsername.isEmpty())
+            blackUsername = null;
+        var gameName = rs.getString("gameName");
+        var jsonGame = rs.getString("game");
+        JSONObject gameObj = new JSONObject(jsonGame);
+        String teamTurnStr = gameObj.getString("teamTurn");
+        ChessGame.TeamColor teamTurn = (teamTurnStr.equals("WHITE")) ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
+        JSONObject boardObj = gameObj.getJSONObject("board");
+        JSONArray boardArray = boardObj.getJSONArray("board");
+        ChessBoard board = new ChessBoard();
+        for (int row = 0; row < boardArray.length(); row++) {
+            JSONArray pieceRow = boardArray.getJSONArray(row);
+            for (int col = 0; col < pieceRow.length(); col++) {
+                if (pieceRow.isNull(col))
+                    continue;
+                JSONObject pieceObj = pieceRow.getJSONObject(col);
+                String colorStr = pieceObj.getString("pieceColor");
+                String typeStr = pieceObj.getString("type");
+                ChessGame.TeamColor color = (colorStr.equals("WHITE")) ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
+                ChessPiece.PieceType type = getPieceType(typeStr);
+                ChessPosition position = new ChessPosition(row + 1, col + 1);
+                board.addPiece(position, new ChessPiece(color, type));
+            }
+        }
+        ChessGame newGame = new ChessGame();
+        newGame.setBoard(board);
+        newGame.setTeamTurn(teamTurn);
+        return new GameData(gameID, whiteUsername, blackUsername, gameName, newGame);
+    }
+
+    private static ChessPiece.PieceType getPieceType(String typeStr) {
+        ChessPiece.PieceType type = null;
+        switch (typeStr) {
+            case "KING" -> type = ChessPiece.PieceType.KING;
+            case "QUEEN" -> type = ChessPiece.PieceType.QUEEN;
+            case "BISHOP" -> type = ChessPiece.PieceType.BISHOP;
+            case "KNIGHT" -> type = ChessPiece.PieceType.KNIGHT;
+            case "ROOK" -> type = ChessPiece.PieceType.ROOK;
+            case "PAWN" -> type = ChessPiece.PieceType.PAWN;
+        }
+        return type;
+    }
+
+    @Override
+    public GameData getGame(int gameID) throws ResponseException {
+        try (var conn = DatabaseManager.getConnection()) {
+            var statement = "SELECT gameID, whiteUsername, blackUsername, gameName, game FROM games WHERE gameID=?";
+            try (var ps = conn.prepareStatement(statement)) {
+                ps.setInt(1, gameID);
+                try (var rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return readGame(rs);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new ResponseException(500, String.format("Unable to read data: %s", e.getMessage()));
+        }
         return null;
     }
 
     @Override
-    public Collection<GameData> listGames() {
-        return List.of();
+    public Collection<GameData> listGames() throws ResponseException {
+        var result = new ArrayList<GameData>();
+        try (var conn = DatabaseManager.getConnection()) {
+            var statement = "SELECT gameID, whiteUsername, blackUsername, gameName, game FROM games";
+            try (var ps = conn.prepareStatement(statement)) {
+                try (var rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        result.add(readGame(rs));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new ResponseException(500, String.format("Unable to read data: %s", e.getMessage()));
+        }
+        return result;
     }
 
     @Override
-    public boolean joinGame(String color, String username, int gameID) throws DataAccessException {
-        return false;
+    public boolean joinGame(String color, String username, int gameID) throws ResponseException {
+        GameData oldGame = getGame(gameID);
+        if (oldGame == null) {
+            throw new ResponseException(400, "Error: bad request");
+        }
+        if (color.equals("WHITE")) {
+            if (oldGame.whiteUsername() == null) {
+                var statement = "UPDATE games SET whiteUsername=? WHERE gameID=?";
+                executeUpdate(statement, username, gameID);
+                return true;
+            } else {
+                throw new ResponseException(403, "Error: already taken");
+            }
+        } else if (color.equals("BLACK")) {
+            if (oldGame.blackUsername() == null) {
+                var statement = "UPDATE games SET blackUsername=? WHERE gameID=?";
+                executeUpdate(statement, username, gameID);
+                return true;
+            } else {
+                throw new ResponseException(403, "Error: already taken");
+            }
+        } else {
+            throw new ResponseException(400, "Error: bad request");
+        }
     }
 
     @Override
-    public int getGameSize() {
+    public int getGameSize() throws ResponseException {
+        try (var conn = DatabaseManager.getConnection()) {
+            var statement = "SELECT COUNT(*) FROM games";
+            try (var ps = conn.prepareStatement(statement)) {
+                try (var rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new ResponseException(500, String.format("Unable to read data: %s", e.getMessage()));
+        }
         return 0;
     }
 }

@@ -1,7 +1,5 @@
 package dataaccess;
 
-import chess.ChessGame;
-import com.google.gson.Gson;
 import exception.ResponseException;
 
 import java.sql.SQLException;
@@ -26,7 +24,8 @@ public interface SqlDAO {
             CREATE TABLE IF NOT EXISTS auths (
               `username` varchar(256) NOT NULL,
               `token` varchar(256) NOT NULL,
-              PRIMARY KEY (`username`),
+              PRIMARY KEY (`token`),
+              INDEX(token),
               INDEX(username)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
             """
@@ -44,7 +43,6 @@ public interface SqlDAO {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
             """
     };
-
 
     default void configureDatabase(String[] createStatement) throws ResponseException {
         DatabaseManager.createDatabase();
@@ -69,19 +67,14 @@ public interface SqlDAO {
                         ps.setString(i + 1, p);
                     } else if (param instanceof Integer p) {
                         ps.setInt(i + 1, p);
-                    } else if (param instanceof ChessGame p) {
-                        json = p.toString();
-                        ps.setString(i + 1, json);
                     } else if (param == null) {
                         ps.setNull(i + 1, NULL);
                     }
                 }
                 ps.executeUpdate();
-                if (json != null) {
-                    var rs = ps.getGeneratedKeys();
-                    if (rs.next()) {
-                        return rs.getInt(1);
-                    }
+                var rs = ps.getGeneratedKeys();
+                if (rs.next()) {
+                    return rs.getInt(1);
                 }
                 return 0;
             }

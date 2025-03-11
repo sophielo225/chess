@@ -50,9 +50,9 @@ public class MySqlAuthDAO implements SqlAuthDAO, SqlDAO {
     }
 
     @Override
-    public void deleteAuth(String username) throws ResponseException {
-        var statement = "DELETE FROM auths WHERE username=?";
-        executeUpdate(statement, username);
+    public void deleteAuth(String token) throws ResponseException {
+        var statement = "DELETE FROM auths WHERE token=?";
+        executeUpdate(statement, token);
     }
 
     @Override
@@ -63,7 +63,12 @@ public class MySqlAuthDAO implements SqlAuthDAO, SqlDAO {
                 ps.setString(1, authToken);
                 try (var rs = ps.executeQuery()) {
                     if (rs.next()) {
-                        return readAuth(rs).username();
+                        String token = readAuth(rs).authToken();
+                        if (token.equals(authToken)) {
+                            return readAuth(rs).username();
+                        } else {
+                            return null;
+                        }
                     }
                 }
             }
