@@ -52,11 +52,7 @@ public class MySqlUserService {
         if (user == null) {
             throw new ResponseException(401, "Error: unauthorized");
         }
-        AuthData existingAuth = mySqlAuthDAO.getAuth(user.username());
         AuthData authData = mySqlAuthDAO.createAuth(generateToken(), user.username());
-        if (existingAuth.equals(authData)) {
-            throw new ResponseException(401, "Error: unauthorized");
-        }
         return new LoginResult(user.username(), authData.authToken(), "OK");
     }
 
