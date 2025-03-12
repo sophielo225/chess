@@ -9,7 +9,7 @@ import java.sql.SQLException;
 public class MySqlAuthDAO implements SqlAuthDAO, SqlDAO {
 
     public MySqlAuthDAO() throws ResponseException {
-        configureDatabase(createAuths);
+        configureDatabase(CREATE_AUTHS);
     }
 
     @Override
@@ -57,9 +57,8 @@ public class MySqlAuthDAO implements SqlAuthDAO, SqlDAO {
 
     @Override
     public String isAuthorized(String authToken) throws ResponseException {
-        try (var conn = DatabaseManager.getConnection()) {
-            var statement = "SELECT token, username FROM auths WHERE token=?";
-            try (var ps = conn.prepareStatement(statement)) {
+        try (var conn = DatabaseManager.getConnection();
+            var ps = conn.prepareStatement("SELECT token, username FROM auths WHERE token=?")) {
                 ps.setString(1, authToken);
                 try (var rs = ps.executeQuery()) {
                     if (rs.next()) {
@@ -71,7 +70,6 @@ public class MySqlAuthDAO implements SqlAuthDAO, SqlDAO {
                         }
                     }
                 }
-            }
         } catch (Exception e) {
             throw new ResponseException(500, String.format("Unable to read data: %s", e.getMessage()));
         }

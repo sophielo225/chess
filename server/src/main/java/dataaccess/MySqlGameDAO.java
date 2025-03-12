@@ -14,7 +14,7 @@ import java.util.Collection;
 public class MySqlGameDAO implements SqlGameDAO, SqlDAO {
 
     public MySqlGameDAO() throws ResponseException {
-        configureDatabase(createGames);
+        configureDatabase(CREATE_GAMES);
     }
 
     @Override
@@ -98,11 +98,13 @@ public class MySqlGameDAO implements SqlGameDAO, SqlDAO {
     private GameData readGame(ResultSet rs) throws SQLException {
         var gameID = rs.getInt("gameID");
         var whiteUsername = rs.getString("whiteUsername");
-        if (whiteUsername.isEmpty())
+        if (whiteUsername.isEmpty()) {
             whiteUsername = null;
+        }
         var blackUsername = rs.getString("blackUsername");
-        if (blackUsername.isEmpty())
+        if (blackUsername.isEmpty()) {
             blackUsername = null;
+        }
         var gameName = rs.getString("gameName");
         var jsonGame = rs.getString("game");
         GsonBuilder gsonBuilder = new GsonBuilder();

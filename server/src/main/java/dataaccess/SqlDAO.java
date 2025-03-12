@@ -8,7 +8,7 @@ import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static java.sql.Types.NULL;
 
 public interface SqlDAO {
-    String[] createUsers = {
+    String[] CREATE_USERS = {
             """
             CREATE TABLE IF NOT EXISTS users (
               `username` varchar(256) NOT NULL,
@@ -19,7 +19,7 @@ public interface SqlDAO {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
             """
     };
-    String[] createAuths = {
+    String[] CREATE_AUTHS = {
             """
             CREATE TABLE IF NOT EXISTS auths (
               `username` varchar(256) NOT NULL,
@@ -30,7 +30,7 @@ public interface SqlDAO {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
             """
     };
-    String[] createGames = {
+    String[] CREATE_GAMES = {
             """
             CREATE TABLE IF NOT EXISTS games (
               `gameID` int NOT NULL AUTO_INCREMENT,

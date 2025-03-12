@@ -1,6 +1,5 @@
 package dataaccess;
 
-import com.google.gson.Gson;
 import exception.ResponseException;
 import model.UserData;
 import org.mindrot.jbcrypt.BCrypt;
@@ -11,7 +10,7 @@ import java.sql.SQLException;
 public class MySqlUserDAO implements SqlUserDAO, SqlDAO {
 
     public MySqlUserDAO() throws ResponseException {
-        configureDatabase(createUsers);
+        configureDatabase(CREATE_USERS);
     }
 
     @Override
@@ -37,19 +36,17 @@ public class MySqlUserDAO implements SqlUserDAO, SqlDAO {
 
     @Override
     public UserData getUser(String username, String password) throws ResponseException {
-        try (var conn = DatabaseManager.getConnection()) {
-            var statement = "SELECT username, password, email FROM users WHERE username=?";
-            try (var ps = conn.prepareStatement(statement)) {
-                ps.setString(1, username);
-                try (var rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        var userData = readUser(rs);
-                        var hashedPassword = userData.password();
-                        if (BCrypt.checkpw(password, hashedPassword)) {
-                            return userData;
-                        } else {
-                            return null;
-                        }
+        try (var conn = DatabaseManager.getConnection();
+             var ps = conn.prepareStatement("SELECT username, password, email FROM users WHERE username=?")) {
+            ps.setString(1, username);
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    var userData = readUser(rs);
+                    var hashedPassword = userData.password();
+                    if (BCrypt.checkpw(password, hashedPassword)) {
+                        return userData;
+                    } else {
+                        return null;
                     }
                 }
             }
