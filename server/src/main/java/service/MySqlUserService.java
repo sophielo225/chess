@@ -34,8 +34,9 @@ public class MySqlUserService {
     }
 
     public RegisterResult register(RegisterRequest registerRequest) throws ResponseException {
-        if ((registerRequest.username() == null) || (registerRequest.password() == null) ||
-                (registerRequest.email() == null)) {
+        if (((registerRequest.username() == null) || (registerRequest.username().isEmpty())) ||
+                ((registerRequest.password() == null) || (registerRequest.password().isEmpty())) ||
+                ((registerRequest.email() == null) || (registerRequest.email().isEmpty()))) {
             throw new ResponseException(400, "Error: bad request");
         }
         if (mySqlUserDAO.getUser(registerRequest.username(), registerRequest.password()) != null) {
