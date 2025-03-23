@@ -5,20 +5,20 @@ import java.util.Scanner;
 import static ui.EscapeSequences.*;
 
 public class Repl {
-    AnteLoginClient anteLoginClient;
+    PreLoginClient preLoginClient;
     PostLoginClient postLoginClient;
     PlayChessClient playChessClient;
 
     public Repl(String serverUrl) {
-        anteLoginClient = new AnteLoginClient(serverUrl);
+        preLoginClient = new PreLoginClient(serverUrl);
         postLoginClient = new PostLoginClient(serverUrl);
         playChessClient = new PlayChessClient(serverUrl);
     }
 
     public void run() {
-        ChessClient client = anteLoginClient;
+        ChessClient client = preLoginClient;
         System.out.println("\uD83D\uDC36 Welcome to Chess. Sign in to start.");
-        System.out.print(SET_TEXT_COLOR_BLUE + anteLoginClient.help());
+        System.out.print(SET_TEXT_COLOR_BLUE + preLoginClient.help());
 
         Scanner scanner = new Scanner(System.in);
         var result = "";
@@ -32,7 +32,7 @@ public class Repl {
                     client = postLoginClient;
                     System.out.print(SET_TEXT_COLOR_BLUE + client.help());
                 } else if (result.contains("You signed out")) {
-                    client = anteLoginClient;
+                    client = preLoginClient;
                     System.out.print(SET_TEXT_COLOR_BLUE + client.help());
                 }
                 System.out.print(SET_TEXT_COLOR_BLUE + result);
