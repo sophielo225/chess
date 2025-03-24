@@ -3,7 +3,6 @@ package client;
 import exception.ResponseException;
 import model.AuthData;
 import model.UserData;
-import server.ServerFacade;
 
 import java.util.Arrays;
 

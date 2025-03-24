@@ -1,7 +1,6 @@
 package client;
 
 import exception.ResponseException;
-import server.ServerFacade;
 
 import java.util.Arrays;
 
