@@ -4,6 +4,7 @@ import java.util.Scanner;
 
 import static ui.EscapeSequences.*;
 
+// This is a comment
 public class Repl {
     PreLoginClient preLoginClient;
     PostLoginClient postLoginClient;
