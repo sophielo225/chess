@@ -157,14 +157,14 @@ public class ServerFacadeTests {
         facade.join("WHITE", gameID);
         List<GameData> games = facade.list();
 
-        boolean correctly_joined = false;
+        boolean correctlyJoined = false;
         for (GameData game : games) {
             if (game.gameID() == gameID && "TestPlayer1".equals(game.whiteUsername())) {
-                correctly_joined = true;
+                correctlyJoined = true;
                 break;
             }
         }
-        Assertions.assertTrue(correctly_joined);
+        Assertions.assertTrue(correctlyJoined);
     }
 
     @Test

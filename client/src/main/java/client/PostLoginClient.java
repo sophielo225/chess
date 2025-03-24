@@ -56,8 +56,9 @@ public class PostLoginClient implements ChessClient {
     public String list() throws ResponseException {
         var games = server.list();
         var result = new StringBuilder();
-        if (!games.isEmpty())
+        if (!games.isEmpty()) {
             gameMap.clear();
+        }
         int i = 1;
         for (var game: games) {
             gameMap.put(i, game);

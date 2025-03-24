@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class ServerFacade {
     private final String serverUrl;
     private static String authToken;
-    private record listGamesResponse(List<GameData> games) {}
+    private record ListGamesResponse(List<GameData> games) {}
 
     public ServerFacade(String url) {
         serverUrl = url;
@@ -55,10 +55,10 @@ public class ServerFacade {
 
     public int create(String gameName) {
         try {
-            record createGameRequest(String gameName) {}
-            record createGameResponse(int gameID) {}
-            createGameRequest request = new createGameRequest(gameName);
-            var response = this.makeRequest("POST", "/game", request, createGameResponse.class);
+            record CreateGameRequest(String gameName) {}
+            record CreateGameResponse(int gameID) {}
+            CreateGameRequest request = new CreateGameRequest(gameName);
+            var response = this.makeRequest("POST", "/game", request, CreateGameResponse.class);
             return response.gameID();
         } catch (ResponseException e) {
             return 0;
@@ -66,13 +66,13 @@ public class ServerFacade {
     }
 
     public List<GameData> list() throws ResponseException {
-        var response = this.makeRequest("GET", "/game", null, listGamesResponse.class);
+        var response = this.makeRequest("GET", "/game", null, ListGamesResponse.class);
         return response.games();
     }
 
     public void join(String color, int gameID) throws ResponseException {
-        record joinGameRequest(String playerColor, int gameID) {}
-        joinGameRequest request = new joinGameRequest(color, gameID);
+        record JoinGameRequest(String playerColor, int gameID) {}
+        JoinGameRequest request = new JoinGameRequest(color, gameID);
         this.makeRequest("PUT", "/game", request, null);
     }
 
@@ -87,7 +87,7 @@ public class ServerFacade {
             writeBody(request, http);
             http.connect();
             throwIfNotSuccessful(http);
-            if ((responseClass != null) && responseClass.equals(listGamesResponse.class)) {
+            if ((responseClass != null) && responseClass.equals(ListGamesResponse.class)) {
                 return readGameBody(http);
             } else {
                 return readBody(http, responseClass);
@@ -122,7 +122,7 @@ public class ServerFacade {
     }
 
     private static <T> T readGameBody(HttpURLConnection http) throws IOException {
-        listGamesResponse listResponse = new listGamesResponse(new ArrayList<>());
+        ListGamesResponse listResponse = new ListGamesResponse(new ArrayList<>());
         if (http.getContentLength() < 0) {
             try (InputStream respBody = http.getInputStream()) {
                 InputStreamReader reader = new InputStreamReader(respBody);
