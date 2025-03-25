@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class MySqlGameDAO implements SqlGameDAO, SqlDAO {
-    private int gameID = 1000;
 
     public MySqlGameDAO() throws ResponseException {
         configureDatabase(CREATE_GAMES);
@@ -45,11 +44,10 @@ public class MySqlGameDAO implements SqlGameDAO, SqlDAO {
         if (isAlreadyTaken(gameName) != null) {
             return null;
         }
-        var statement = "INSERT INTO games (gameID, whiteUsername, blackUsername, gameName, game) VALUES (?, ?, ?, ?, ?)";
+        var statement = "INSERT INTO games (whiteUsername, blackUsername, gameName, game) VALUES (?, ?, ?, ?)";
         ChessGame chessGame = new ChessGame();
         var jsonGame = new  Gson().toJson(chessGame);
-        var id = executeUpdate(statement, gameID, "", "", gameName, jsonGame);
-        gameID++;
+        var id = executeUpdate(statement, "", "", gameName, jsonGame);
         return new GameData(id, "", "", gameName, chessGame);
     }
 
