@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName;
 import dataaccess.*;
 import exception.ResponseException;
 import model.UserData;
+import server.websocket.WebSocketHandler;
 import service.MySqlAuthService;
 import service.MySqlGameService;
 import service.MySqlUserService;
@@ -54,8 +55,10 @@ public class Server {
         private int gameID;
     }
     private record ClearResult(String message) {}
+    private final WebSocketHandler webSocketHandler;
 
     public Server() {
+        webSocketHandler = new WebSocketHandler();
     }
 
     public int run(int desiredPort) {
@@ -63,6 +66,7 @@ public class Server {
 
         Spark.staticFiles.location("web");
 
+        Spark.webSocket("/ws", webSocketHandler);
         Spark.delete("/db", this::clear);
         Spark.post("/user", this::register);
         Spark.post("/session", this::login);
