@@ -12,4 +12,6 @@ public interface SqlGameDAO {
     Collection<GameData> listGames() throws ResponseException;
     boolean joinGame(String color, String username, int gameID) throws ResponseException;
     int getGameSize() throws ResponseException;
+    void updateGame(int gameID, String game) throws ResponseException;
+    void leaveGame(String color, int gameID) throws ResponseException;
 }

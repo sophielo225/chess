@@ -14,7 +14,8 @@ public class ChessGame {
     private TeamColor teamTurn = TeamColor.WHITE;
     private ChessBoard board;
     private ChessPosition pieceEnPassant = new ChessPosition(0, 0);
-    private Map<ChessPosition, ChessPiece> castlingPieces = new HashMap<>();
+    private final Map<ChessPosition, ChessPiece> castlingPieces = new HashMap<>();
+    private boolean ended = false;
 
     public ChessGame() {
         board = new ChessBoard();
@@ -46,6 +47,10 @@ public class ChessGame {
         WHITE,
         BLACK
     }
+
+    public boolean isEnded() { return ended; }
+
+    public void setEnded() { ended = true; }
 
     private boolean canMakeEnPassantMove (ChessPosition startPosition) {
         ChessPiece piece = board.getPiece(startPosition);

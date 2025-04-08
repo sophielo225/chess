@@ -1,8 +1,13 @@
 package server.websocket;
 
+import chess.ChessGame;
+import chess.ChessPosition;
+import chess.InvalidMoveException;
 import com.google.gson.Gson;
 import dataaccess.MySqlAuthDAO;
+import dataaccess.MySqlGameDAO;
 import exception.ResponseException;
+import model.GameData;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -26,10 +31,22 @@ public class WebSocketHandler {
             UserGameCommand command = new Gson().fromJson(message, UserGameCommand.class);
             String userName = getUserName(command.getAuthToken());
             switch (command.getCommandType()) {
-                case CONNECT -> connect(session, userName, (ConnectCommand) command);
-                case MAKE_MOVE -> makeMove(session, userName, (MakeMoveCommand) command);
-                case LEAVE -> leaveGame(session, userName, (LeaveGameCommand) command);
-                case RESIGN -> resign(session, userName, (ResignCommand) command);
+                case CONNECT -> {
+                    ConnectCommand connectCommand = new Gson().fromJson(message, ConnectCommand.class);
+                    connect(session, userName, connectCommand);
+                }
+                case MAKE_MOVE -> {
+                    MakeMoveCommand makeMoveCommand = new Gson().fromJson(message, MakeMoveCommand.class);
+                    makeMove(session, userName, makeMoveCommand);
+                }
+                case LEAVE -> {
+                    LeaveGameCommand leaveGameCommand = new Gson().fromJson(message, LeaveGameCommand.class);
+                    leaveGame(session, userName, leaveGameCommand);
+                }
+                case RESIGN -> {
+                    ResignCommand resignCommand = new Gson().fromJson(message, ResignCommand.class);
+                    resign(session, userName, resignCommand);
+                }
             }
         } catch (ResponseException ex) {
             sendMessage(session.getRemote(), new ErrorMessage("Error: unauthorized"));
@@ -47,30 +64,124 @@ public class WebSocketHandler {
         endpoint.sendString(message.toString());
     }
 
-    private void connect(Session session, String userName, ConnectCommand command) throws IOException {
-        connections.add(userName, session);
-        var message = String.format("%s is connected", userName);
-        var notificationMessage = new NotificationMessage(message);
-        connections.broadcast(userName, notificationMessage);
+    private void connect(Session session, String userName, ConnectCommand command) throws IOException, ResponseException {
+        var gameID = command.getGameID();
+        MySqlGameDAO mySqlGameDAO = new MySqlGameDAO();
+        GameData game = mySqlGameDAO.getGame(gameID);
+        if (game == null) {
+            var errorMessage = new  ErrorMessage("Error: bad gameID");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        if (userName == null) {
+            var errorMessage = new  ErrorMessage("Error: bad userName");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        connections.add(gameID, userName, session);
+        var jsonGame = new Gson().toJson(game.game());
+        var loadGameMessage = new LoadGameMessage(jsonGame);
+        sendMessage(session.getRemote(), loadGameMessage);
+        String message;
+        if (userName.equals(game.whiteUsername())) {
+            message = String.format("%s connected as WHITE player", userName);
+        } else if (userName.equals(game.blackUsername())) {
+            message = String.format("%s connected as BLACK player", userName);
+        } else {
+            message = String.format("%s connected as an Observer", userName);
+        }
+        var notification = new NotificationMessage(message);
+        connections.broadcast(gameID, userName, notification);
     }
 
-    public void makeMove(Session session, String userName, MakeMoveCommand command) throws IOException {
-        var message = String.format("%s made a move", userName);
-        var loadGameMessage = new LoadGameMessage(message);
-        connections.broadcast("", loadGameMessage);
+    public void makeMove(Session session, String userName, MakeMoveCommand command) throws IOException, ResponseException, InvalidMoveException {
+        var gameID = command.getGameID();
+        MySqlGameDAO mySqlGameDAO = new MySqlGameDAO();
+        GameData game = mySqlGameDAO.getGame(gameID);
+        if (game == null) {
+            var errorMessage = new  ErrorMessage("Error: bad gameID");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        ChessGame.TeamColor color = userName.equals(game.whiteUsername()) ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
+        if (game.game().isInCheck(color)) {
+            var errorString = String.format("Error: %s is in check", (color == ChessGame.TeamColor.WHITE) ? "WHITE" : "BLACK");
+            var errorMessage = new  ErrorMessage(errorString);
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        if (color != game.game().getTeamTurn()) {
+            var errorMessage = new  ErrorMessage("Error: wrong turn");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        if (!(userName.equals(game.whiteUsername()) || userName.equals(game.blackUsername()))) {
+            var errorMessage = new  ErrorMessage("Error: observer cannot make move");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        if (game.game().isEnded()) {
+            var errorMessage = new  ErrorMessage("Error: the game is ended");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        var move = command.getMove();
+        ChessPosition start = move.getStartPosition();
+        ChessPosition end = move.getEndPosition();
+        game.game().makeMove(move);
+        mySqlGameDAO.updateGame(gameID, new Gson().toJson(game.game()));
+        var jsonGame = new Gson().toJson(game.game());
+        var loadGameMessage = new LoadGameMessage(jsonGame);
+        connections.broadcast(gameID, "", loadGameMessage);
+        var message = String.format("%s made a move from (%d, %d) to (%d, %d)", userName, start.getRow(),
+                                                                    start.getColumn(), end.getRow(), end.getColumn());
+        var notification = new NotificationMessage(message);
+        connections.broadcast(gameID, userName, notification);
     }
 
-    private void leaveGame(Session session, String userName, LeaveGameCommand command) throws IOException {
+    private void leaveGame(Session session, String userName, LeaveGameCommand command) throws IOException, ResponseException {
+        var gameID = command.getGameID();
+        MySqlGameDAO mySqlGameDAO = new MySqlGameDAO();
+        GameData game = mySqlGameDAO.getGame(gameID);
+        if (game == null) {
+            var errorMessage = new  ErrorMessage("Error: bad gameID");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        if (userName.equals(game.whiteUsername())) {
+            mySqlGameDAO.leaveGame("WHITE", gameID);
+        } else if (userName.equals(game.blackUsername())) {
+            mySqlGameDAO.leaveGame("BLACK", gameID);
+        }
         connections.remove(userName);
-        var message = String.format("%s left the shop", userName);
+        var message = String.format("%s left the game", userName);
         var notificationMessage = new NotificationMessage(message);
-        connections.broadcast(userName, notificationMessage);
+        connections.broadcast(gameID, userName, notificationMessage);
     }
 
-    private void resign(Session session, String userName, ResignCommand command) throws IOException {
-        connections.remove(userName);
-        var message = String.format("%s left the shop", userName);
+    private void resign(Session session, String userName, ResignCommand command) throws IOException, ResponseException {
+        var gameID = command.getGameID();
+        MySqlGameDAO mySqlGameDAO = new MySqlGameDAO();
+        GameData game = mySqlGameDAO.getGame(gameID);
+        if (game == null) {
+            var errorMessage = new  ErrorMessage("Error: bad gameID");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        if (!(userName.equals(game.whiteUsername()) || userName.equals(game.blackUsername()))) {
+            var errorMessage = new  ErrorMessage("Error: observer cannot resign the game");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        if (game.game().isEnded()) {
+            var errorMessage = new  ErrorMessage("Error: the game is ended");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        game.game().setEnded();
+        mySqlGameDAO.updateGame(gameID, new Gson().toJson(game.game()));
+        var message = String.format("%s resigned the game", userName);
         var notificationMessage = new NotificationMessage(message);
-        connections.broadcast(userName, notificationMessage);
+        connections.broadcast(gameID, "", notificationMessage);
     }
 }

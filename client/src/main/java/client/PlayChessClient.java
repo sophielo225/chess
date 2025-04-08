@@ -1,10 +1,18 @@
 package client;
 
+import client.websocket.ServerMessageObserver;
 import exception.ResponseException;
+import websocket.messages.ErrorMessage;
+import websocket.messages.LoadGameMessage;
+import websocket.messages.NotificationMessage;
+import websocket.messages.ServerMessage;
 
 import java.util.Arrays;
 
-public class PlayChessClient implements ChessClient {
+import static ui.EscapeSequences.SET_TEXT_COLOR_BLUE;
+import static ui.EscapeSequences.SET_TEXT_COLOR_RED;
+
+public class PlayChessClient implements ChessClient, ServerMessageObserver {
     private final ServerFacade server;
 
     public PlayChessClient(String serverUrl) {
@@ -18,8 +26,8 @@ public class PlayChessClient implements ChessClient {
             var params = Arrays.copyOfRange(tokens, 1, tokens.length);
             return switch (cmd) {
                 case "redraw" -> redraw(params);
-                case "leave" -> leave(params);
-                case "move" -> move(params);
+                case "leave" -> leaveGame(params);
+                case "move" -> makeMove(params);
                 case "resign" -> resign(params);
                 case "highlight" -> highlight(params);
                 default -> help();
@@ -33,11 +41,11 @@ public class PlayChessClient implements ChessClient {
         throw new ResponseException(400, "Function unimplemented!");
     }
 
-    public String leave(String... params) throws ResponseException {
+    public String leaveGame(String... params) throws ResponseException {
         return "You left the game.";
     }
 
-    public String move(String... params) throws ResponseException {
+    public String makeMove(String... params) throws ResponseException {
         throw new ResponseException(400, "Function unimplemented!");
     }
 
@@ -57,5 +65,24 @@ public class PlayChessClient implements ChessClient {
                 - resign
                 - highlight <start>
                 """;
+    }
+
+    @Override
+    public void notify(ServerMessage message) {
+        switch (message.getServerMessageType()) {
+            case NOTIFICATION -> {
+                var notification = ((NotificationMessage) message).getMessage();
+                System.out.println(SET_TEXT_COLOR_RED + notification);
+            }
+            case ERROR -> {
+                var error = ((ErrorMessage) message).getErrorMessage();
+                System.out.println(SET_TEXT_COLOR_RED + error);
+            }
+            case LOAD_GAME -> loadGame(((LoadGameMessage) message));
+        }
+    }
+
+    private void loadGame(LoadGameMessage message) {
+
     }
 }

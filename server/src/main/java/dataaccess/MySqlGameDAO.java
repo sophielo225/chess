@@ -134,6 +134,31 @@ public class MySqlGameDAO implements SqlGameDAO, SqlDAO {
     }
 
     @Override
+    public void updateGame(int gameID, String game) throws ResponseException {
+        GameData oldGame = getGame(gameID);
+        if (oldGame == null) {
+            throw new ResponseException(400, "Error: bad request");
+        }
+        var statement = "UPDATE games SET game=? WHERE gameID=?";
+        executeUpdate(statement, game, gameID);
+    }
+
+    @Override
+    public void leaveGame(String color, int gameID) throws ResponseException {
+        GameData oldGame = getGame(gameID);
+        if (oldGame == null) {
+            throw new ResponseException(400, "Error: bad request");
+        }
+        if (color.equals("WHITE")) {
+            var statement = "UPDATE games SET whiteUsername=? WHERE gameID=?";
+            executeUpdate(statement, "", gameID);
+        } else if (color.equals("BLACK")) {
+            var statement = "UPDATE games SET blackUsername=? WHERE gameID=?";
+            executeUpdate(statement, "", gameID);
+        }
+    }
+
+    @Override
     public int getGameSize() throws ResponseException {
         try (var conn = DatabaseManager.getConnection()) {
             var statement = "SELECT COUNT(*) FROM games";

@@ -27,9 +27,13 @@ public class ChessGameTypeAdapter implements JsonDeserializer<ChessGame>  {
                 board.addPiece(position, new ChessPiece(color, pieceType));
             }
         }
+        boolean isEnded = element.getAsJsonObject().get("ended").getAsBoolean();
         ChessGame newGame = new ChessGame();
         newGame.setBoard(board);
         newGame.setTeamTurn(teamTurn);
+        if (isEnded) {
+            newGame.setEnded();
+        }
         return newGame;
     }
 
