@@ -133,7 +133,7 @@ public class ChessGame {
             return null;
         }
         ArrayList<ChessMove> moves = new ArrayList<>();
-        if (castlingPieces.get(startPosition).equals(piece)) {
+        if ((castlingPieces.containsKey(startPosition)) && (castlingPieces.get(startPosition).equals(piece))) {
             if (leftRookFound) {
                 boolean isQueenSideWorking = true;
                 for (int i = startPosition.getColumn() - 1; i > 1; i--) {

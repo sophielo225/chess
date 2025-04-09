@@ -68,31 +68,41 @@ public class PostLoginClient implements ChessClient {
         return result.toString();
     }
 
+    private int validateInputNumber(String number) throws ResponseException {
+        int choice;
+        try {
+            choice = Integer.parseInt(number);
+        } catch (NumberFormatException e) {
+            throw new ResponseException(400, String.format("Wrong input %s", number));
+        }
+        if ((choice < 1) || (choice > gameMap.size())) {
+            throw new ResponseException(400, "Please list games first.");
+        }
+        return choice;
+    }
+
     public String join(String... params) throws ResponseException {
         if (params.length == 2) {
-            var choice = Integer.parseInt(params[0]);
-            if (choice == 0) {
-                return "Please list games first.";
-            }
+            int choice = validateInputNumber(params[0]);
             String teamColor = params[1];
-            joinedColor = teamColor;
-            GameData gameData = gameMap.get(choice);
-            if (gameData == null) {
-                return "Please list games first.";
+            if (teamColor.equals("WHITE") || teamColor.equals("BLACK")) {
+                joinedColor = teamColor;
+                GameData gameData = gameMap.get(choice);
+                if (gameData == null) {
+                    return "Please list games first.";
+                }
+                gameID = gameData.gameID();
+                server.join(teamColor, gameID);
+                return String.format("You join game %d.", choice);
             }
-            gameID = gameData.gameID();
-            server.join(teamColor, gameID);
-            return String.format("You join game %d.", choice);
+            return String.format("Wrong color %s", teamColor);
         }
         throw new ResponseException(400, "Expected: <ID> [WHITE|BLACK]");
     }
 
     public String observe(String... params) throws ResponseException {
         if (params.length == 1) {
-            var choice = Integer.parseInt(params[0]);
-            if (choice == 0) {
-                return "Please list games first.";
-            }
+            int choice = validateInputNumber(params[0]);
             GameData gameData = gameMap.get(choice);
             if (gameData == null) {
                 return "Please list games first.";
