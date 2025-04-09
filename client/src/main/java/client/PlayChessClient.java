@@ -93,6 +93,7 @@ public class PlayChessClient implements ChessClient, ServerMessageObserver {
                     return "The game is ended";
                 }
                 wsc.makeMove(authToken, gameID, new ChessMove(startPos, endPos, null));
+                return String.format("You made a move from <%s> to <%s>", params[0], params[1]);
             } else {
                 return "Wrong start/end position format";
             }
@@ -102,7 +103,7 @@ public class PlayChessClient implements ChessClient, ServerMessageObserver {
 
     public String resign(String... params) throws ResponseException {
         wsc.resign(authToken, gameID);
-        return "You resigned the game";
+        return "";
     }
 
     public String highlight(String... params) throws ResponseException {
@@ -276,7 +277,7 @@ public class PlayChessClient implements ChessClient, ServerMessageObserver {
         switch (serverMessage.getServerMessageType()) {
             case NOTIFICATION -> {
                 var notification = new Gson().fromJson(message, NotificationMessage.class);
-                System.out.print("\n" + SET_TEXT_COLOR_RED + notification.getMessage());
+                System.out.print("\n" + SET_TEXT_COLOR_MAGENTA + notification.getMessage());
             }
             case ERROR -> {
                 var error = new Gson().fromJson(message, ErrorMessage.class);

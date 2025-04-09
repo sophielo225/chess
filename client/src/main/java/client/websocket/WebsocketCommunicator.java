@@ -14,7 +14,6 @@ import java.net.URISyntaxException;
 public class WebsocketCommunicator extends Endpoint {
     Session session;
     ServerMessageObserver observer;
-    private boolean connected = false;
 
     public WebsocketCommunicator(String url, ServerMessageObserver observer) throws ResponseException {
         try {
@@ -42,10 +41,6 @@ public class WebsocketCommunicator extends Endpoint {
     public void onOpen(Session session, EndpointConfig endpointConfig) {
     }
 
-    public boolean isConnected() { return connected; }
-
-    public void setConnected(boolean connected) { this.connected = connected; }
-
     public void connect(String authToken, int gameID) throws ResponseException {
         try {
             var command = new ConnectCommand(authToken, gameID);
@@ -68,7 +63,6 @@ public class WebsocketCommunicator extends Endpoint {
         try {
             var command = new ResignCommand(authToken, gameID);
             this.session.getBasicRemote().sendText(new Gson().toJson(command));
-            this.session.close();
         } catch (IOException ex) {
             throw new ResponseException(500, ex.getMessage());
         }

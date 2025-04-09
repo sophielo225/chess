@@ -13,10 +13,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import websocket.commands.*;
-import websocket.messages.ErrorMessage;
-import websocket.messages.LoadGameMessage;
-import websocket.messages.NotificationMessage;
-import websocket.messages.ServerMessage;
+import websocket.messages.*;
 
 import java.io.IOException;
 
@@ -78,20 +75,27 @@ public class WebSocketHandler {
             sendMessage(session.getRemote(), errorMessage);
             return;
         }
+        var authToken = command.getAuthToken();
+        MySqlAuthDAO mySqlAuthDAO = new MySqlAuthDAO();
+        if (!mySqlAuthDAO.isAuthorized(authToken).equals(userName)) {
+            var errorMessage = new  ErrorMessage("Error: unauthorized");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
         connections.add(gameID, userName, session);
         var jsonGame = new Gson().toJson(game.game());
         var loadGameMessage = new LoadGameMessage(jsonGame);
         sendMessage(session.getRemote(), loadGameMessage);
         String message;
         if (userName.equals(game.whiteUsername())) {
-            message = String.format("%s connected as WHITE player", userName);
+            message = String.format("joined '%s' WHITE", userName);
         } else if (userName.equals(game.blackUsername())) {
-            message = String.format("%s connected as BLACK player", userName);
+            message = String.format("joined '%s' BLACK", userName);
         } else {
-            message = String.format("%s connected as an Observer", userName);
+            message = String.format("joined '%s' Observer", userName);
         }
-        var notification = new NotificationMessage(message);
-        connections.broadcast(gameID, userName, notification);
+        var notificationMessage = new NotificationMessage(message);
+        connections.broadcast(gameID, userName, notificationMessage);
     }
 
     public void makeMove(Session session, String userName, MakeMoveCommand command) throws IOException, ResponseException, InvalidMoveException {
@@ -103,15 +107,15 @@ public class WebSocketHandler {
             sendMessage(session.getRemote(), errorMessage);
             return;
         }
-        ChessGame.TeamColor color = userName.equals(game.whiteUsername()) ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
-        if (game.game().isInCheck(color)) {
-            var errorString = String.format("Error: %s is in check", (color == ChessGame.TeamColor.WHITE) ? "WHITE" : "BLACK");
-            var errorMessage = new  ErrorMessage(errorString);
+        if (userName == null) {
+            var errorMessage = new  ErrorMessage("Error: bad userName");
             sendMessage(session.getRemote(), errorMessage);
             return;
         }
-        if (color != game.game().getTeamTurn()) {
-            var errorMessage = new  ErrorMessage("Error: wrong turn");
+        var authToken = command.getAuthToken();
+        MySqlAuthDAO mySqlAuthDAO = new MySqlAuthDAO();
+        if (!mySqlAuthDAO.isAuthorized(authToken).equals(userName)) {
+            var errorMessage = new  ErrorMessage("Error: unauthorized");
             sendMessage(session.getRemote(), errorMessage);
             return;
         }
@@ -125,6 +129,18 @@ public class WebSocketHandler {
             sendMessage(session.getRemote(), errorMessage);
             return;
         }
+        ChessGame.TeamColor color = userName.equals(game.whiteUsername()) ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
+        if (color != game.game().getTeamTurn()) {
+            var errorMessage = new  ErrorMessage("Error: wrong turn");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        if (game.game().isInCheckmate(color)) {
+            var errorString = String.format("Error: '%s' is in checkmate", (color == ChessGame.TeamColor.WHITE) ? "WHITE" : "BLACK");
+            var errorMessage = new  ErrorMessage(errorString);
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
         var move = command.getMove();
         ChessPosition start = move.getStartPosition();
         ChessPosition end = move.getEndPosition();
@@ -133,10 +149,21 @@ public class WebSocketHandler {
         var jsonGame = new Gson().toJson(game.game());
         var loadGameMessage = new LoadGameMessage(jsonGame);
         connections.broadcast(gameID, "", loadGameMessage);
-        var message = String.format("%s made a move from (%d, %d) to (%d, %d)", userName, start.getRow(),
-                                                                    start.getColumn(), end.getRow(), end.getColumn());
-        var notification = new NotificationMessage(message);
-        connections.broadcast(gameID, userName, notification);
+        String startStr = String.format("%c%d", 'a' + start.getColumn() - 1, start.getRow());
+        String endStr = String.format("%c%d", 'a' + end.getColumn() - 1, end.getRow());
+        String message = String.format("'%s' made a move from <%s> to <%s>", userName, startStr, endStr);
+        var notificationMessage = new NotificationMessage(message);
+        connections.broadcast(gameID, userName, notificationMessage);
+        String warning = null;
+        if (game.game().isInCheck(ChessGame.TeamColor.WHITE)) {
+            warning = String.format("'%s' is in check", game.whiteUsername());
+        } else if (game.game().isInCheck(ChessGame.TeamColor.BLACK)) {
+            warning = String.format("'%s' is in check", game.blackUsername());
+        }
+        if (warning != null) {
+            var warningMessage = new NotificationMessage(warning);
+            connections.broadcast(gameID, "", warningMessage);
+        }
     }
 
     private void leaveGame(Session session, String userName, LeaveGameCommand command) throws IOException, ResponseException {
@@ -148,13 +175,25 @@ public class WebSocketHandler {
             sendMessage(session.getRemote(), errorMessage);
             return;
         }
+        if (userName == null) {
+            var errorMessage = new  ErrorMessage("Error: bad userName");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        var authToken = command.getAuthToken();
+        MySqlAuthDAO mySqlAuthDAO = new MySqlAuthDAO();
+        if (!mySqlAuthDAO.isAuthorized(authToken).equals(userName)) {
+            var errorMessage = new  ErrorMessage("Error: unauthorized");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
         if (userName.equals(game.whiteUsername())) {
             mySqlGameDAO.leaveGame("WHITE", gameID);
         } else if (userName.equals(game.blackUsername())) {
             mySqlGameDAO.leaveGame("BLACK", gameID);
         }
         connections.remove(userName);
-        var message = String.format("%s left the game", userName);
+        var message = String.format("'%s' left the game", userName);
         var notificationMessage = new NotificationMessage(message);
         connections.broadcast(gameID, userName, notificationMessage);
     }
@@ -165,6 +204,18 @@ public class WebSocketHandler {
         GameData game = mySqlGameDAO.getGame(gameID);
         if (game == null) {
             var errorMessage = new  ErrorMessage("Error: bad gameID");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        if (userName == null) {
+            var errorMessage = new  ErrorMessage("Error: bad userName");
+            sendMessage(session.getRemote(), errorMessage);
+            return;
+        }
+        var authToken = command.getAuthToken();
+        MySqlAuthDAO mySqlAuthDAO = new MySqlAuthDAO();
+        if (!mySqlAuthDAO.isAuthorized(authToken).equals(userName)) {
+            var errorMessage = new  ErrorMessage("Error: unauthorized");
             sendMessage(session.getRemote(), errorMessage);
             return;
         }
@@ -180,7 +231,7 @@ public class WebSocketHandler {
         }
         game.game().setEnded();
         mySqlGameDAO.updateGame(gameID, new Gson().toJson(game.game()));
-        var message = String.format("%s resigned the game", userName);
+        var message = String.format("'%s' resigned the game", userName);
         var notificationMessage = new NotificationMessage(message);
         connections.broadcast(gameID, "", notificationMessage);
     }
