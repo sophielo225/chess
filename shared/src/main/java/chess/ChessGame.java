@@ -319,7 +319,7 @@ public class ChessGame {
      * @return True if the specified team is in check
      */
     public boolean isInCheck(TeamColor teamColor) {
-        return !getInCheckPieceMap(teamColor).isEmpty();
+        return !getThreateningPieceMap(teamColor).isEmpty();
     }
 
     /**
@@ -352,7 +352,7 @@ public class ChessGame {
      * @return True if the specified team is in checkmate
      */
     public boolean isInCheckmate(TeamColor teamColor) {
-        Map<ChessPosition, ChessPiece> map = getInCheckPieceMap(teamColor);
+        Map<ChessPosition, ChessPiece> map = getThreateningPieceMap(teamColor);
         if (!map.isEmpty()) {
             Iterator<Map.Entry<ChessPosition, ChessPiece>> it = map.entrySet().iterator();
             while (it.hasNext()) {
@@ -360,6 +360,12 @@ public class ChessGame {
                 if (enemyCanBeCaptured(teamColor, enemyPiece.getKey())) {
                     it.remove();
                     break;
+                }
+            }
+            Map<ChessPosition, ChessPiece> myTeamMap = getPieceMapByColor(teamColor);
+            for (Map.Entry<ChessPosition, ChessPiece> teamMember : myTeamMap.entrySet()) {
+                if (!validMoves(teamMember.getKey()).isEmpty()) {
+                    return false; /* check can be blocked */
                 }
             }
             return !map.isEmpty();
@@ -406,12 +412,12 @@ public class ChessGame {
     }
 
     /**
-     * Get the map which specified enemy pieces are put in position/piece pairs
+     * Get the map which threatening pieces are put in position/piece pairs
      *
      * @param teamColor which team to get the threatening pieces
      * @return Map of pieces which attack the king of the specified team
      */
-    private Map<ChessPosition, ChessPiece> getInCheckPieceMap(TeamColor teamColor) {
+    private Map<ChessPosition, ChessPiece> getThreateningPieceMap(TeamColor teamColor) {
         Map<ChessPosition, ChessPiece> map = new HashMap<>();
         final Map<ChessPosition, ChessPiece> myMap = getPieceMapByColor(teamColor);
         final Map<ChessPosition, ChessPiece> enemyMap = (teamColor == TeamColor.WHITE) ?
