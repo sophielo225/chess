@@ -1,5 +1,7 @@
 package client;
 
+import client.websocket.WebsocketCommunicator;
+
 import java.util.Scanner;
 
 import static ui.EscapeSequences.*;
@@ -8,6 +10,7 @@ public class Repl {
     PreLoginClient preLoginClient;
     PostLoginClient postLoginClient;
     PlayChessClient playChessClient;
+    private WebsocketCommunicator wsc;
     private State state = State.LOGGED_OUT;
 
     public Repl(String serverUrl) {
@@ -33,12 +36,16 @@ public class Repl {
                     client = postLoginClient;
                     state = State.LOGGED_IN;
                 } else if (result.contains("You signed out")) {
+                    preLoginClient.setAuthToken(null);
                     client = preLoginClient;
                     state = State.LOGGED_OUT;
                 } else if (result.contains("You join game") || result.contains("You observe game")) {
+                    playChessClient.setColor(postLoginClient.getColor());
+                    playChessClient.connect(preLoginClient.getAuthToken(), postLoginClient.getGameID());
                     client = playChessClient;
                     state = State.PLAY_CHESS;
                 } else if (result.contains("You left the game")) {
+                    playChessClient.setColor(null);
                     client = postLoginClient;
                     state = State.LOGGED_IN;
                 }

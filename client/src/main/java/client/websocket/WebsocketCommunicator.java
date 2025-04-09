@@ -1,10 +1,9 @@
 package client.websocket;
 
+import chess.ChessMove;
 import com.google.gson.Gson;
 import exception.ResponseException;
-import websocket.commands.ConnectCommand;
-import websocket.commands.LeaveGameCommand;
-import websocket.messages.ServerMessage;
+import websocket.commands.*;
 
 import javax.websocket.*;
 import java.io.IOException;
@@ -15,6 +14,7 @@ import java.net.URISyntaxException;
 public class WebsocketCommunicator extends Endpoint {
     Session session;
     ServerMessageObserver observer;
+    private boolean connected = false;
 
     public WebsocketCommunicator(String url, ServerMessageObserver observer) throws ResponseException {
         try {
@@ -29,8 +29,7 @@ public class WebsocketCommunicator extends Endpoint {
             this.session.addMessageHandler(new MessageHandler.Whole<String>() {
                 @Override
                 public void onMessage(String message) {
-                    ServerMessage serverMessage = new Gson().fromJson(message, ServerMessage.class);
-                    WebsocketCommunicator.this.observer.notify(serverMessage);
+                    WebsocketCommunicator.this.observer.notify(message);
                 }
             });
         } catch (DeploymentException | IOException | URISyntaxException ex) {
@@ -43,6 +42,10 @@ public class WebsocketCommunicator extends Endpoint {
     public void onOpen(Session session, EndpointConfig endpointConfig) {
     }
 
+    public boolean isConnected() { return connected; }
+
+    public void setConnected(boolean connected) { this.connected = connected; }
+
     public void connect(String authToken, int gameID) throws ResponseException {
         try {
             var command = new ConnectCommand(authToken, gameID);
@@ -52,7 +55,26 @@ public class WebsocketCommunicator extends Endpoint {
         }
     }
 
-    public void leave(String authToken, int gameID) throws ResponseException {
+    public void makeMove(String authToken, int gameID, ChessMove move) throws ResponseException {
+        try {
+            var command = new MakeMoveCommand(authToken, gameID, move);
+            this.session.getBasicRemote().sendText(new Gson().toJson(command));
+        } catch (IOException ex) {
+            throw new ResponseException(500, ex.getMessage());
+        }
+    }
+
+    public void resign(String authToken, int gameID) throws ResponseException {
+        try {
+            var command = new ResignCommand(authToken, gameID);
+            this.session.getBasicRemote().sendText(new Gson().toJson(command));
+            this.session.close();
+        } catch (IOException ex) {
+            throw new ResponseException(500, ex.getMessage());
+        }
+    }
+
+    public void leaveGame(String authToken, int gameID) throws ResponseException {
         try {
             var command = new LeaveGameCommand(authToken, gameID);
             this.session.getBasicRemote().sendText(new Gson().toJson(command));

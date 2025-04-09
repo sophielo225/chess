@@ -7,6 +7,7 @@ import model.UserData;
 import java.util.Arrays;
 
 public class PreLoginClient implements ChessClient {
+    private String authToken = null;
     private final ServerFacade server;
 
     public PreLoginClient(String serverUrl) {
@@ -42,6 +43,7 @@ public class PreLoginClient implements ChessClient {
             String email = params[2];
             AuthData authData = server.register(new UserData(username, password, email));
             if (authData != null) {
+                authToken = authData.authToken();
                 return String.format("You signed in as %s.", username);
             } else {
                 return String.format("Failed to register %s.", username);
@@ -56,6 +58,9 @@ public class PreLoginClient implements ChessClient {
             String password = params[1];
             AuthData authData = server.login(new UserData(username, password, ""));
             if (authData != null) {
+                if (authToken == null) {
+                    authToken = authData.authToken();
+                }
                 return String.format("You signed in as %s.", username);
             } else {
                 return String.format("Failed to sign in as %s.", username);
@@ -63,6 +68,10 @@ public class PreLoginClient implements ChessClient {
         }
         throw new ResponseException(400, "Expected: <USERNAME> <PASSWORD>");
     }
+
+    public String getAuthToken() { return authToken; }
+
+    public void setAuthToken(String authToken) { this.authToken = authToken; }
 
     public String help() {
         return """

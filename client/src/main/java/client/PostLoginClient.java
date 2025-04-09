@@ -1,20 +1,15 @@
 package client;
 
-import chess.ChessBoard;
-import chess.ChessGame;
-import chess.ChessPiece;
-import chess.ChessPosition;
 import exception.ResponseException;
 import model.GameData;
 
 import java.util.Arrays;
 import java.util.HashMap;
 
-import static ui.EscapeSequences.*;
-
 public class PostLoginClient implements ChessClient {
     private final ServerFacade server;
     private String joinedColor;
+    private int gameID = 0;
     private final HashMap<Integer, GameData> gameMap = new HashMap<>();
 
     public PostLoginClient(String serverUrl) {
@@ -39,10 +34,14 @@ public class PostLoginClient implements ChessClient {
         }
     }
 
+    public int getGameID() { return gameID; }
+
+    public String getColor() { return joinedColor; }
+
     public String create(String... params) throws ResponseException {
         if (params.length == 1) {
             String gameName = params[0];
-            int gameID = server.create(gameName);
+            gameID = server.create(gameName);
             if (gameID > 0) {
                 return String.format("Game %s created.", gameName);
             } else {
@@ -69,76 +68,6 @@ public class PostLoginClient implements ChessClient {
         return result.toString();
     }
 
-    private void drawRow(ChessBoard board, int row, ChessGame.TeamColor color) {
-        String rowNo = String.format(" %d ", row);
-        System.out.print(SET_BG_COLOR_LIGHT_GREY + SET_TEXT_COLOR_BLACK + rowNo);
-        String bgColor;
-        if (color == ChessGame.TeamColor.WHITE) {
-            bgColor = ((row % 2) == 0) ? SET_BG_COLOR_WHITE : SET_BG_COLOR_BLACK;
-        } else {
-            bgColor = ((row % 2) == 0) ? SET_BG_COLOR_BLACK : SET_BG_COLOR_WHITE;
-        }
-        for (int col = 1; col <= 8; col++) {
-            ChessPosition position = new ChessPosition(row, col);
-            ChessPiece piece = board.getPiece(position);
-            if (piece == null) {
-                System.out.print(bgColor + "   ");
-                bgColor = bgColor.equals(SET_BG_COLOR_WHITE) ? SET_BG_COLOR_BLACK : SET_BG_COLOR_WHITE;
-                continue;
-            }
-            String textColor = (piece.getTeamColor() == ChessGame.TeamColor.WHITE) ? SET_TEXT_COLOR_RED : SET_TEXT_COLOR_BLUE;
-            String squarePattern = bgColor + textColor;
-            switch (piece.getPieceType()) {
-                case KING -> System.out.print(squarePattern + " K ");
-                case QUEEN -> System.out.print(squarePattern + " Q ");
-                case BISHOP -> System.out.print(squarePattern + " B ");
-                case KNIGHT -> System.out.print(squarePattern + " N ");
-                case ROOK -> System.out.print(squarePattern + " R ");
-                case PAWN -> System.out.print(squarePattern + " P ");
-            }
-            bgColor = bgColor.equals(SET_BG_COLOR_WHITE) ? SET_BG_COLOR_BLACK : SET_BG_COLOR_WHITE;
-        }
-        System.out.print(SET_BG_COLOR_LIGHT_GREY + SET_TEXT_COLOR_BLACK + rowNo);
-        System.out.println(RESET_BG_COLOR + RESET_TEXT_COLOR);
-    }
-
-    private void drawHeader(char[] header, boolean reversed) {
-        System.out.print(SET_BG_COLOR_LIGHT_GREY + SET_TEXT_COLOR_BLACK);
-        if (reversed) {
-            for (int i = header.length - 1; i >= 0; i--) {
-                System.out.print(' ');
-                System.out.print(header[i]);
-                System.out.print(' ');
-            }
-        } else {
-            for (char c : header) {
-                System.out.print(' ');
-                System.out.print(c);
-                System.out.print(' ');
-            }
-        }
-        System.out.println(RESET_BG_COLOR + RESET_TEXT_COLOR);
-    }
-
-    private void drawBoard(int choice) {
-        GameData gameData = gameMap.get(choice);
-        ChessBoard board = gameData.game().getBoard();
-        char[] header = { ' ', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', ' ' };
-        if (joinedColor.equals("WHITE")) {
-            drawHeader(header, false);
-            for (int row = 8; row > 0; row--) {
-                drawRow(board, row, ChessGame.TeamColor.WHITE);
-            }
-            drawHeader(header, false);
-        } else {
-            drawHeader(header, true);
-            for (int row = 1; row <= 8; row++) {
-                drawRow(board, row, ChessGame.TeamColor.BLACK);
-            }
-            drawHeader(header, true);
-        }
-    }
-
     public String join(String... params) throws ResponseException {
         if (params.length == 2) {
             var choice = Integer.parseInt(params[0]);
@@ -151,9 +80,8 @@ public class PostLoginClient implements ChessClient {
             if (gameData == null) {
                 return "Please list games first.";
             }
-            var gameID = gameData.gameID();
+            gameID = gameData.gameID();
             server.join(teamColor, gameID);
-            drawBoard(choice);
             return String.format("You join game %d.", choice);
         }
         throw new ResponseException(400, "Expected: <ID> [WHITE|BLACK]");
@@ -169,14 +97,15 @@ public class PostLoginClient implements ChessClient {
             if (gameData == null) {
                 return "Please list games first.";
             }
+            gameID = gameData.gameID();
             joinedColor = "WHITE";
-            drawBoard(choice);
             return String.format("You observe game %d.", choice);
         }
         throw new ResponseException(400, "Expected: <ID>");
     }
 
     public String logout() throws ResponseException {
+        gameID = 0;
         server.logout();
         return "You signed out.";
     }
